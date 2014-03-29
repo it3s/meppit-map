@@ -1,0 +1,42 @@
+{
+  "name": "meppit-map",
+  "version": "0.0.1",
+  "main": "dist/meppit-map.full.min.js",
+  "description": "javascript library for Meppit's map component",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/it3s/meppit-map.git"
+  },
+  "keywords": ["map", "GeoJSON"],
+  "author": {
+    "name": "it3s",
+    "url": "http://it3s.org"
+  },
+  "contributors": [{
+    "name": "Luiz Armesto",
+    "email": "luiz.armesto@gmail.com"
+  }],
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://github.com/LuizArmesto/backbone.leaflet/blob/master/LICENSE"
+    }
+  ],
+  "readmeFilename": "README.md",
+  "dependencies": {},
+  "devDependencies": {
+    "chai": "~1.9.0",
+    "sinon": "~1.8.0",
+    "sinon-chai": "~2.5.0",
+    "grunt": "~0.4.1",
+    "grunt-contrib-concat": "~0.3.0",
+    "grunt-contrib-jshint": "~0.6.4",
+    "grunt-contrib-uglify": "~0.2.4",
+    "grunt-contrib-watch": "~0.5.3",
+    "grunt-contrib-coffee": "~0.10.1",
+    "coffee-script": "~1.7.1",
+    "grunt-blanket-mocha": "~0.4.0",
+    "blanket": "~1.1.5",
+    "requirejs": "~2.1.10"
+  }
+}
