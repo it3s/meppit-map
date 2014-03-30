@@ -1,5 +1,7 @@
 # Meppit-Map
 
+[![Build Status](https://travis-ci.org/it3s/meppit-map.svg)](https://travis-ci.org/it3s/meppit-map)
+
 Javascript library for Meppit's map component.
 
 ## Contributing
