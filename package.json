@@ -7,15 +7,20 @@
     "type": "git",
     "url": "git://github.com/it3s/meppit-map.git"
   },
-  "keywords": ["map", "GeoJSON"],
+  "keywords": [
+    "map",
+    "GeoJSON"
+  ],
   "author": {
     "name": "it3s",
     "url": "http://it3s.org"
   },
-  "contributors": [{
-    "name": "Luiz Armesto",
-    "email": "luiz.armesto@gmail.com"
-  }],
+  "contributors": [
+    {
+      "name": "Luiz Armesto",
+      "email": "luiz.armesto@gmail.com"
+    }
+  ],
   "licenses": [
     {
       "type": "MIT",
@@ -37,6 +42,7 @@
     "coffee-script": "~1.7.1",
     "grunt-blanket-mocha": "~0.4.0",
     "blanket": "~1.1.5",
-    "requirejs": "~2.1.10"
+    "requirejs": "~2.1.10",
+    "mocha": "~1.18.2"
   }
 }
