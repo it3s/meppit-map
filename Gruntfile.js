@@ -99,21 +99,9 @@ module.exports = function(grunt) {
           'dist/<%= pkg.name.replace(".js", "") %>.js': ['src/main.coffee', 'src/**/*.coffee']
         }
       },
-      src: {
-        options: {
-          bare: true,
-          sourceMap: true
-        },
-        expand: true,
-        flatten: true,
-        cwd: 'src',
-        src: ['**/*.coffee'],
-        dest: 'src',
-        ext: '.js'
-      },
       spec: {
         options: {
-          bare: true
+          bare: true,
         },
         expand: true,
         flatten: true,

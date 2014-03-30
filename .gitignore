@@ -9,6 +9,7 @@ src/*.js
 spec/*.js
 !spec/test-loader.js
 !spec/test-suite.js
+!spec/main.js
 *.js.map
 
 *.seed
