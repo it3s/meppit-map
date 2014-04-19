@@ -25,6 +25,7 @@ class Map extends BaseClass
   destroy: -> @leafletMap.remove()
 
   load: (data, callback) ->
+    # Loads GeoJSON `data` and then calls `callback`
     # Expect coordinates to be in [lon, lat] order
     if isNumber data  # received the feature id
       @load @getURL(data), callback
@@ -37,13 +38,19 @@ class Map extends BaseClass
     else
       @_geoJsonManager.addData data
       callback? true
+      this
 
-  toGeoJSON: -> @_geoJsonManager.toGeoJSON()
+  toGeoJSON: ->
+    # Returns a GeoJSON FeatureCollection containing all features loaded
+    @_geoJsonManager.toGeoJSON()
 
   get: (id) ->
+    # Returns a GeoJSON Feature or undefined
     @_getLeafletLayer(id)?.toGeoJSON()
 
   remove: (data) ->
+    # Removes the given features fom map
+    # `data` can be a GeoJSON or a feature id
     if data.type == 'FeatureCollection'
       @remove feature for feature in data.features
     else
@@ -55,28 +62,40 @@ class Map extends BaseClass
       geoJSON = layer.toGeoJSON()
       @leafletLayers?[@_getGeoJSONId geoJSON ? @_getGeoJSONHash geoJSON] =
           undefined
+    this
 
   edit: (data, callback) ->
+    # Edits the feature given by `data` and then calls `callback`
+    # `data` can be a GeoJSON or a feature id
     @closePopup()
     @panTo data
     @_ensureEditorManager()?.edit data, callback
+    this
 
   draw: (data, callback) ->
     @closePopup()
     @_ensureEditorManager()?.draw data, callback
+    this
 
-  done: -> @_editorManager?.done()
+  done: ->
+    @_editorManager?.done()
+    this
 
-  cancel: -> @_editorManager?.cancel()
+  cancel: ->
+    @_editorManager?.cancel()
+    this
 
   openPopup: (data, content) ->
     @openPopupAt data, content
+    this
 
   openPopupAt: (data, content, latLng) ->
     @_ensurePopupManager()?.open data, content, latLng
+    this
 
   closePopup: ->
     @_ensurePopupManager()?.close()
+    this
 
   fit: (data) ->
     layer = @_getLeafletLayer data
@@ -85,6 +104,7 @@ class Map extends BaseClass
       @leafletMap.fitBounds layer.getBounds()
     else if layer.getLatLng?
       @leafletMap.setView layer.getLatLng(), @leafletMap.getMaxZoom()
+    this
 
   panTo: (data) ->
     layer = @_getLeafletLayer data
@@ -93,22 +113,32 @@ class Map extends BaseClass
       @leafletMap.panInsideBounds layer.getBounds()
     else if layer.getLatLng?
       @leafletMap.panTo layer.getLatLng()
+    this
 
   selectTileProvider: (provider) ->
     @tileProviders[provider]?.addTo(@leafletMap)
     @currentTileProvider = provider
+    this
 
   clear: ->
     @_geoJsonManager.clearLayers()  # remove all layers
     @leafletLayers = {}  # clear the assossiation between layers and ids
+    this
 
-  getZoom: -> @leafletMap.getZoom.apply @leafletMap, arguments
+  getZoom: ->
+    @leafletMap.getZoom.apply @leafletMap, arguments
 
-  setZoom: -> @leafletMap.setZoom.apply @leafletMap, arguments
+  setZoom: ->
+    @leafletMap.setZoom.apply @leafletMap, arguments
+    this
 
-  zoomIn: -> @leafletMap.zoomIn.apply @leafletMap, arguments
+  zoomIn: ->
+    @leafletMap.zoomIn.apply @leafletMap, arguments
+    this
 
-  zoomOut: -> @leafletMap.zoomOut.apply @leafletMap, arguments
+  zoomOut: ->
+    @leafletMap.zoomOut.apply @leafletMap, arguments
+    this
 
   getURL: (feature) ->
     url = feature?.properties?[@getOption 'urlPropertyName']
