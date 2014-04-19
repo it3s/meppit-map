@@ -338,16 +338,16 @@
 
     Map.prototype.defaultOptions = {
       element: document.createElement('div'),
-      tileProvider: 'map',
-      center: [-23.5, -46.6167],
       zoom: 14,
+      center: [-23.5, -46.6167],
+      tileProvider: 'map',
       idPropertyName: 'id',
       urlPropertyName: 'url',
       featureURL: '#{baseURL}features/#{id}',
+      geojsonTileURL: '#{baseURL}geoJSON/{z}/{x}/{y}',
       enableEditor: true,
       enablePopup: true,
-      enableGeoJsonTile: true,
-      geojsonURL: '#{baseURL}geoJSON/{z}/{x}/{y}'
+      enableGeoJsonTile: true
     };
 
     function Map(options) {
@@ -381,7 +381,10 @@
         })(this));
       } else {
         this._geoJsonManager.addData(data);
-        return typeof callback === "function" ? callback(true) : void 0;
+        if (typeof callback === "function") {
+          callback(true);
+        }
+        return this;
       }
     };
 
@@ -395,59 +398,79 @@
     };
 
     Map.prototype.remove = function(data) {
-      var feature, geoJSON, layer, _i, _len, _ref, _ref1, _results;
+      var feature, geoJSON, layer, _i, _len, _ref, _ref1;
       if (data.type === 'FeatureCollection') {
         _ref = data.features;
-        _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           feature = _ref[_i];
-          _results.push(this.remove(feature));
+          this.remove(feature);
         }
-        return _results;
       } else {
         layer = this._getLeafletLayer(data);
         this.leafletMap.removeLayer(layer);
         this.__clearLayerEventListeners(layer);
         geoJSON = layer.toGeoJSON();
-        return (_ref1 = this.leafletLayers) != null ? _ref1[this._getGeoJSONId(geoJSON != null ? geoJSON : this._getGeoJSONHash(geoJSON))] = void 0 : void 0;
+        if ((_ref1 = this.leafletLayers) != null) {
+          _ref1[this._getGeoJSONId(geoJSON != null ? geoJSON : this._getGeoJSONHash(geoJSON))] = void 0;
+        }
       }
+      return this;
     };
 
     Map.prototype.edit = function(data, callback) {
       var _ref;
       this.closePopup();
       this.panTo(data);
-      return (_ref = this._ensureEditorManager()) != null ? _ref.edit(data, callback) : void 0;
+      if ((_ref = this._ensureEditorManager()) != null) {
+        _ref.edit(data, callback);
+      }
+      return this;
     };
 
     Map.prototype.draw = function(data, callback) {
       var _ref;
       this.closePopup();
-      return (_ref = this._ensureEditorManager()) != null ? _ref.draw(data, callback) : void 0;
+      if ((_ref = this._ensureEditorManager()) != null) {
+        _ref.draw(data, callback);
+      }
+      return this;
     };
 
     Map.prototype.done = function() {
       var _ref;
-      return (_ref = this._editorManager) != null ? _ref.done() : void 0;
+      if ((_ref = this._editorManager) != null) {
+        _ref.done();
+      }
+      return this;
     };
 
     Map.prototype.cancel = function() {
       var _ref;
-      return (_ref = this._editorManager) != null ? _ref.cancel() : void 0;
+      if ((_ref = this._editorManager) != null) {
+        _ref.cancel();
+      }
+      return this;
     };
 
     Map.prototype.openPopup = function(data, content) {
-      return this.openPopupAt(data, content);
+      this.openPopupAt(data, content);
+      return this;
     };
 
     Map.prototype.openPopupAt = function(data, content, latLng) {
       var _ref;
-      return (_ref = this._ensurePopupManager()) != null ? _ref.open(data, content, latLng) : void 0;
+      if ((_ref = this._ensurePopupManager()) != null) {
+        _ref.open(data, content, latLng);
+      }
+      return this;
     };
 
     Map.prototype.closePopup = function() {
       var _ref;
-      return (_ref = this._ensurePopupManager()) != null ? _ref.close() : void 0;
+      if ((_ref = this._ensurePopupManager()) != null) {
+        _ref.close();
+      }
+      return this;
     };
 
     Map.prototype.fit = function(data) {
@@ -457,10 +480,11 @@
         return;
       }
       if (layer.getBounds != null) {
-        return this.leafletMap.fitBounds(layer.getBounds());
+        this.leafletMap.fitBounds(layer.getBounds());
       } else if (layer.getLatLng != null) {
-        return this.leafletMap.setView(layer.getLatLng(), this.leafletMap.getMaxZoom());
+        this.leafletMap.setView(layer.getLatLng(), this.leafletMap.getMaxZoom());
       }
+      return this;
     };
 
     Map.prototype.panTo = function(data) {
@@ -470,10 +494,11 @@
         return;
       }
       if (layer.getBounds != null) {
-        return this.leafletMap.panInsideBounds(layer.getBounds());
+        this.leafletMap.panInsideBounds(layer.getBounds());
       } else if (layer.getLatLng != null) {
-        return this.leafletMap.panTo(layer.getLatLng());
+        this.leafletMap.panTo(layer.getLatLng());
       }
+      return this;
     };
 
     Map.prototype.selectTileProvider = function(provider) {
@@ -481,12 +506,14 @@
       if ((_ref = this.tileProviders[provider]) != null) {
         _ref.addTo(this.leafletMap);
       }
-      return this.currentTileProvider = provider;
+      this.currentTileProvider = provider;
+      return this;
     };
 
     Map.prototype.clear = function() {
       this._geoJsonManager.clearLayers();
-      return this.leafletLayers = {};
+      this.leafletLayers = {};
+      return this;
     };
 
     Map.prototype.getZoom = function() {
@@ -494,15 +521,18 @@
     };
 
     Map.prototype.setZoom = function() {
-      return this.leafletMap.setZoom.apply(this.leafletMap, arguments);
+      this.leafletMap.setZoom.apply(this.leafletMap, arguments);
+      return this;
     };
 
     Map.prototype.zoomIn = function() {
-      return this.leafletMap.zoomIn.apply(this.leafletMap, arguments);
+      this.leafletMap.zoomIn.apply(this.leafletMap, arguments);
+      return this;
     };
 
     Map.prototype.zoomOut = function() {
-      return this.leafletMap.zoomOut.apply(this.leafletMap, arguments);
+      this.leafletMap.zoomOut.apply(this.leafletMap, arguments);
+      return this;
     };
 
     Map.prototype.getURL = function(feature) {
@@ -534,8 +564,8 @@
       }
     };
 
-    Map.prototype._getGeoJsonURL = function() {
-      return interpolate(this.getOption('geojsonURL'), {
+    Map.prototype._getGeoJsonTileURL = function() {
+      return interpolate(this.getOption('geojsonTileURL'), {
         baseURL: this._getBaseURL()
       });
     };
@@ -567,7 +597,7 @@
       };
       if (this.getOption('enableGeoJsonTile')) {
         if (this.__geoJsonTileLayer == null) {
-          this.__geoJsonTileLayer = (new L.TileLayer.GeoJSON(this._getGeoJsonURL(), {
+          this.__geoJsonTileLayer = (new L.TileLayer.GeoJSON(this._getGeoJsonTileURL(), {
             clipTiles: true,
             unique: (function(_this) {
               return function(feature) {
