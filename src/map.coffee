@@ -1,16 +1,16 @@
 class Map extends BaseClass
   defaultOptions:
     element: document.createElement 'div'
-    tileProvider: 'map'
-    center: [ -23.5, -46.6167 ]
     zoom: 14
+    center: [ -23.5, -46.6167 ]
+    tileProvider: 'map'
     idPropertyName: 'id'
     urlPropertyName: 'url'
     featureURL: '#{baseURL}features/#{id}'
+    geojsonTileURL: '#{baseURL}geoJSON/{z}/{x}/{y}'
     enableEditor: true
     enablePopup: true
     enableGeoJsonTile: true
-    geojsonURL: '#{baseURL}geoJSON/{z}/{x}/{y}'
 
   constructor: (@options = {}) ->
     super
@@ -127,8 +127,8 @@ class Map extends BaseClass
       location.protocol + '//' + location.hostname + (
           if location.port isnt '' then (':' + location.port) else '' ) + "/"
 
-  _getGeoJsonURL: ->
-    interpolate @getOption('geojsonURL'), baseURL: @_getBaseURL()
+  _getGeoJsonTileURL: ->
+    interpolate @getOption('geojsonTileURL'), baseURL: @_getBaseURL()
 
   _ensureLeafletMap: ->
     @element ?= if isString @getOption('element')
@@ -147,7 +147,7 @@ class Map extends BaseClass
     options =
       style: styleCallback
       onEachFeature: onEachFeatureCallback
-    @__geoJsonTileLayer ?= (new L.TileLayer.GeoJSON(@_getGeoJsonURL(), {
+    @__geoJsonTileLayer ?= (new L.TileLayer.GeoJSON(@_getGeoJsonTileURL(), {
         clipTiles: true
         unique: (feature) => @_getGeoJSONId feature
       }, options)).addTo @leafletMap if @getOption 'enableGeoJsonTile'

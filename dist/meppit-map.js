@@ -338,16 +338,16 @@
 
     Map.prototype.defaultOptions = {
       element: document.createElement('div'),
-      tileProvider: 'map',
-      center: [-23.5, -46.6167],
       zoom: 14,
+      center: [-23.5, -46.6167],
+      tileProvider: 'map',
       idPropertyName: 'id',
       urlPropertyName: 'url',
       featureURL: '#{baseURL}features/#{id}',
+      geojsonTileURL: '#{baseURL}geoJSON/{z}/{x}/{y}',
       enableEditor: true,
       enablePopup: true,
-      enableGeoJsonTile: true,
-      geojsonURL: '#{baseURL}geoJSON/{z}/{x}/{y}'
+      enableGeoJsonTile: true
     };
 
     function Map(options) {
@@ -534,8 +534,8 @@
       }
     };
 
-    Map.prototype._getGeoJsonURL = function() {
-      return interpolate(this.getOption('geojsonURL'), {
+    Map.prototype._getGeoJsonTileURL = function() {
+      return interpolate(this.getOption('geojsonTileURL'), {
         baseURL: this._getBaseURL()
       });
     };
@@ -567,7 +567,7 @@
       };
       if (this.getOption('enableGeoJsonTile')) {
         if (this.__geoJsonTileLayer == null) {
-          this.__geoJsonTileLayer = (new L.TileLayer.GeoJSON(this._getGeoJsonURL(), {
+          this.__geoJsonTileLayer = (new L.TileLayer.GeoJSON(this._getGeoJsonTileURL(), {
             clipTiles: true,
             unique: (function(_this) {
               return function(feature) {
