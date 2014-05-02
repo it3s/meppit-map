@@ -46,6 +46,7 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw'],
         fakeLayer = editing: enable: sinon.spy()
         @mapStub._getLeafletLayer.onFirstCall().returns undefined
         @mapStub._getLeafletLayer.onSecondCall().returns fakeLayer
+        @mapStub.load.yields [@geoJsonPoint]
         @editor.edit @geoJsonPoint
         expect(fakeLayer.editing.enable.calledOnce).to.be.true
         expect(@mapStub.load.calledWith @geoJsonPoint).to.be.true

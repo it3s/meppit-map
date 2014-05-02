@@ -22,13 +22,12 @@ class EditorManager extends BaseClass
       @_currentLayer?.dragging?.enable()  # Markers
       @map.editing = true
     # Try to load the data if it was not found
-    if not @_currentLayer
+    if @_currentLayer
+      edit()
+    else
       @map.load data, =>
-        # TODO: Test me
         @_currentLayer = @map._getLeafletLayer data
         edit()
-      @_currentLayer = @map._getLeafletLayer data
-    edit()
 
   draw: (data, callback) ->
     @cancel()

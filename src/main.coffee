@@ -56,7 +56,6 @@ reverseCoordinates = Meppit.reverseCoordinates = (data) ->
   return data
 
 requestJSON = Meppit.requestJSON = (url, callback) ->
-  # TODO: Test
   req = if window.XMLHttpRequest  # Mozilla, Safari, ...
     new XMLHttpRequest()
   else if window.ActiveXObject  # IE 8 and older

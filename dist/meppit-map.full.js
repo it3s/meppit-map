@@ -1,6 +1,6 @@
 /*!
 * meppit-map
-* v0.1.0 - 2014-05-01
+* v0.1.0 - 2014-05-02
 * (c) 2014 it3s; MIT License
 */
 
@@ -227,16 +227,16 @@
           return _this.map.editing = true;
         };
       })(this);
-      if (!this._currentLayer) {
-        this.map.load(data, (function(_this) {
+      if (this._currentLayer) {
+        return edit();
+      } else {
+        return this.map.load(data, (function(_this) {
           return function() {
             _this._currentLayer = _this.map._getLeafletLayer(data);
             return edit();
           };
         })(this));
-        this._currentLayer = this.map._getLeafletLayer(data);
       }
-      return edit();
     };
 
     EditorManager.prototype.draw = function(data, callback) {

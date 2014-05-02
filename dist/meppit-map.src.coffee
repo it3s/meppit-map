@@ -56,7 +56,6 @@ reverseCoordinates = Meppit.reverseCoordinates = (data) ->
   return data
 
 requestJSON = Meppit.requestJSON = (url, callback) ->
-  # TODO: Test
   req = if window.XMLHttpRequest  # Mozilla, Safari, ...
     new XMLHttpRequest()
   else if window.ActiveXObject  # IE 8 and older
@@ -126,13 +125,12 @@ class EditorManager extends BaseClass
       @_currentLayer?.dragging?.enable()  # Markers
       @map.editing = true
     # Try to load the data if it was not found
-    if not @_currentLayer
+    if @_currentLayer
+      edit()
+    else
       @map.load data, =>
-        # TODO: Test me
         @_currentLayer = @map._getLeafletLayer data
         edit()
-      @_currentLayer = @map._getLeafletLayer data
-    edit()
 
   draw: (data, callback) ->
     @cancel()
@@ -499,7 +497,7 @@ class Popup extends BaseClass
     @_createPopup()
 
   open: (data, content, latLng) ->
-    return if @map.editing  # TODO: test this if
+    return if @map.editing
     layer = @map._getLeafletLayer data
     return if not layer?
     latLng ?=

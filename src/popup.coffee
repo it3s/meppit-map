@@ -6,7 +6,7 @@ class Popup extends BaseClass
     @_createPopup()
 
   open: (data, content, latLng) ->
-    return if @map.editing  # TODO: test this if
+    return if @map.editing
     layer = @map._getLeafletLayer data
     return if not layer?
     latLng ?=
