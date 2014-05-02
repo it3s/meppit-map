@@ -368,24 +368,34 @@
 
     Map.prototype.load = function(data, callback) {
       if (isNumber(data)) {
-        return this.load(this.getURL(data), callback);
+        this.load(this.getURL(data), callback);
       } else if (isString(data)) {
-        return requestJSON(data, (function(_this) {
+        requestJSON(data, (function(_this) {
           return function(resp) {
             if (resp) {
               return _this.load(resp, callback);
             } else {
-              return typeof callback === "function" ? callback(false) : void 0;
+              return typeof callback === "function" ? callback(null) : void 0;
             }
           };
         })(this));
       } else {
         this._geoJsonManager.addData(data);
         if (typeof callback === "function") {
-          callback(true);
+          callback(data);
         }
-        return this;
       }
+      return this;
+    };
+
+    Map.prototype.show = function(data, callback) {
+      this.load(data, (function(_this) {
+        return function(geoJSON) {
+          _this.fit(geoJSON);
+          return typeof callback === "function" ? callback(geoJSON) : void 0;
+        };
+      })(this));
+      return this;
     };
 
     Map.prototype.toGeoJSON = function() {
@@ -474,29 +484,25 @@
     };
 
     Map.prototype.fit = function(data) {
-      var layer;
-      layer = this._getLeafletLayer(data);
-      if (layer == null) {
+      var bounds;
+      if (data == null) {
         return;
       }
-      if (layer.getBounds != null) {
-        this.leafletMap.fitBounds(layer.getBounds());
-      } else if (layer.getLatLng != null) {
-        this.leafletMap.setView(layer.getLatLng(), this.leafletMap.getMaxZoom());
+      bounds = this._getBounds(data);
+      if (bounds != null) {
+        this.leafletMap.fitBounds(bounds);
       }
       return this;
     };
 
     Map.prototype.panTo = function(data) {
-      var layer;
-      layer = this._getLeafletLayer(data);
-      if (layer == null) {
+      var bounds;
+      if (data == null) {
         return;
       }
-      if (layer.getBounds != null) {
-        this.leafletMap.panInsideBounds(layer.getBounds());
-      } else if (layer.getLatLng != null) {
-        this.leafletMap.panTo(layer.getLatLng());
+      bounds = this._getBounds(data);
+      if (bounds != null) {
+        this.leafletMap.panInsideBounds(bounds);
       }
       return this;
     };
@@ -549,6 +555,34 @@
       });
     };
 
+    Map.prototype._getBounds = function(data) {
+      var bounds, feature, features, layer, _i, _len;
+      if (data.type === 'FeatureCollection') {
+        features = data.features.slice();
+      } else {
+        features = [data];
+      }
+      bounds = void 0;
+      for (_i = 0, _len = features.length; _i < _len; _i++) {
+        feature = features[_i];
+        layer = this._getLeafletLayer(feature);
+        if (layer != null) {
+          if (layer.getBounds != null) {
+            if (bounds == null) {
+              bounds = layer.getBounds();
+            }
+            bounds.extend(layer.getBounds());
+          } else if (layer.getLatLng != null) {
+            if (bounds == null) {
+              bounds = L.latLngBounds([layer.getLatLng()]);
+            }
+            bounds.extend(layer.getLatLng());
+          }
+        }
+      }
+      return bounds;
+    };
+
     Map.prototype._getBaseURL = function() {
       var baseDocument, baseElements, baseURL;
       baseElements = document.getElementsByTagName('base');
@@ -578,7 +612,7 @@
     };
 
     Map.prototype._ensureGeoJsonManager = function() {
-      var onEachFeatureCallback, options, styleCallback, _ref, _ref1;
+      var onEachFeatureCallback, options, styleCallback;
       if (this.leafletLayers == null) {
         this.leafletLayers = {};
       }
@@ -607,7 +641,7 @@
           }, options)).addTo(this.leafletMap);
         }
       }
-      return this._geoJsonManager != null ? this._geoJsonManager : this._geoJsonManager = (_ref = (_ref1 = this.__geoJsonTileLayer) != null ? _ref1.geojsonLayer : void 0) != null ? _ref : new L.GeoJSON([], options).addTo(this.leafletMap);
+      return this._geoJsonManager != null ? this._geoJsonManager : this._geoJsonManager = new L.GeoJSON([], options).addTo(this.leafletMap);
     };
 
     Map.prototype._ensureEditorManager = function() {

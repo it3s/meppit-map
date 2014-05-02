@@ -246,11 +246,17 @@ class Map extends BaseClass
         if resp
           @load resp, callback
         else
-          callback? false
+          callback? null
     else
       @_geoJsonManager.addData data
-      callback? true
-      this
+      callback? data
+    this
+
+  show: (data, callback) ->
+    @load data, (geoJSON) =>
+      @fit geoJSON
+      callback? geoJSON
+    this
 
   toGeoJSON: ->
     # Returns a GeoJSON FeatureCollection containing all features loaded
@@ -310,21 +316,15 @@ class Map extends BaseClass
     this
 
   fit: (data) ->
-    layer = @_getLeafletLayer data
-    return if not layer?
-    if layer.getBounds?
-      @leafletMap.fitBounds layer.getBounds()
-    else if layer.getLatLng?
-      @leafletMap.setView layer.getLatLng(), @leafletMap.getMaxZoom()
+    return if not data?
+    bounds = @_getBounds data
+    @leafletMap.fitBounds bounds if bounds?
     this
 
   panTo: (data) ->
-    layer = @_getLeafletLayer data
-    return if not layer?
-    if layer.getBounds?
-      @leafletMap.panInsideBounds layer.getBounds()
-    else if layer.getLatLng?
-      @leafletMap.panTo layer.getLatLng()
+    return if not data?
+    bounds = @_getBounds data
+    @leafletMap.panInsideBounds bounds if bounds?
     this
 
   selectTileProvider: (provider) ->
@@ -357,6 +357,23 @@ class Map extends BaseClass
     return url if url?
     url = interpolate @getOption('featureURL'), baseURL: @_getBaseURL()
     interpolate url, id: @_getGeoJSONId(feature)
+
+  _getBounds: (data) ->
+    if data.type is 'FeatureCollection'
+        features = data.features.slice()
+    else
+        features = [data]
+    bounds = undefined
+    for feature in features
+      layer = @_getLeafletLayer feature
+      if layer?
+        if layer.getBounds?
+          bounds ?= layer.getBounds()
+          bounds.extend layer.getBounds()
+        else if layer.getLatLng?
+          bounds ?= L.latLngBounds [layer.getLatLng()]
+          bounds.extend layer.getLatLng()
+    bounds
 
   _getBaseURL: ->
     baseElements = document.getElementsByTagName 'base'
@@ -393,8 +410,7 @@ class Map extends BaseClass
         clipTiles: true
         unique: (feature) => @_getGeoJSONId feature
       }, options)).addTo @leafletMap if @getOption 'enableGeoJsonTile'
-    @_geoJsonManager ?= @__geoJsonTileLayer?.geojsonLayer ? new L.GeoJSON([],
-        options).addTo @leafletMap
+    @_geoJsonManager ?= new L.GeoJSON([], options).addTo @leafletMap
 
   _ensureEditorManager: ->
     if not @getOption 'enableEditor'

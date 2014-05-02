@@ -41,6 +41,7 @@ enableGeoJsonTile | `Boolean` | `true` | Whether features will be loaded automat
 #### Methods
 
  * `load( <GeoJSON> data, <Function> callback? )` returns `this`
+ * `show( <GeoJSON> data, <Function> callback? )` returns `this`
  * `toGeoJSON()` returns a `GeoJSON FeatureCollection`
  * `get( <Number> id )` returns a `GeoJSON Feature` or `undefined`
  * `remove( <GeoJSON or Number> )` returns `this`

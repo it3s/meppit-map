@@ -91,7 +91,7 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
 
     describe '#load', ->
       it 'loads GeoJSON feature', ->
-        @map.load @geoJsonPoint
+        expect(@map.load @geoJsonPoint).to.eql @map
         expect(@map.toGeoJSON()).to.eql createFeatureCollection(
                                               [@geoJsonPoint])
 
@@ -142,6 +142,20 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         server.respond()
         server.restore()
 
+    describe '#show', ->
+      it 'loads and fit GeoJSON feature collection', (done) ->
+        @geoJsonPoint.properties = id: 42
+        @geoJsonPolygon.properties = id: 43
+        geoJsonCollection = createFeatureCollection [
+            @geoJsonPoint, @geoJsonPolygon]
+        expect(@map.show geoJsonCollection, (geojson) =>
+          expect(@map.toGeoJSON()).to.eql geoJsonCollection
+          layerLatLng = @map._getLeafletLayer(42).getLatLng()
+          layerBounds = @map._getLeafletLayer(43).getBounds()
+          expect(@map.leafletMap.getBounds().contains layerLatLng).to.be.true
+          expect(@map.leafletMap.getBounds().contains layerBounds).to.be.true
+          done()
+        ).to.eql @map
 
     describe '#get', ->
       it 'returns the GeoJSON to given id', ->
@@ -154,11 +168,10 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         expect(@map.get 43).to.eql @geoJsonPolygon
         expect(@map.get 44).not.to.exist
 
-
     describe '#clear', ->
       it 'removes all elements from map', ->
         @map.load @geoJsonPoint
-        @map.clear()
+        expect(@map.clear()).to.eql @map
         expect(@map.toGeoJSON()).to.eql createFeatureCollection([])
         expect(@map.leafletLayers).to.eql {}
 
@@ -166,7 +179,7 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
       it 'delegates to popup manager', ->
         popup = @map._ensurePopupManager()
         stub = sinon.stub popup, 'open'
-        @map.openPopup 'data'
+        expect(@map.openPopup 'data').to.eql @map
         expect(stub.withArgs('data').calledOnce).to.be.true
 
       it 'does nothing if "enablePopup" option is false', ->
@@ -184,7 +197,7 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
       it 'delegates to popup manager', ->
         popup = @map._ensurePopupManager()
         stub = sinon.stub popup, 'close'
-        @map.closePopup()
+        expect(@map.closePopup()).to.eql @map
         expect(stub.called).to.be.true
 
     describe '#getURL', ->
@@ -217,7 +230,7 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
       it 'delegates to editor manager', ->
         editor = @map._ensureEditorManager()
         stub = sinon.stub editor, 'draw'
-        @map.draw 'data', 'callback'
+        expect(@map.draw 'data', 'callback').to.eql @map
         expect(stub.withArgs('data', 'callback').calledOnce).to.be.true
 
       it 'does nothing if "enableEditor" option is false', ->
@@ -249,14 +262,14 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
       it 'delegates to editor manager', ->
         editor = @map._ensureEditorManager()
         stub = sinon.stub editor, 'done'
-        @map.done()
+        expect(@map.done()).to.eql @map
         expect(stub.calledOnce).to.be.true
 
     describe '#cancel', ->
       it 'delegates to editor manager', ->
         editor = @map._ensureEditorManager()
         stub = sinon.stub editor, 'cancel'
-        @map.cancel()
+        expect(@map.cancel()).to.eql @map
         expect(stub.calledOnce).to.be.true
 
     describe '#fit', ->
@@ -265,7 +278,7 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         @map.load @geoJsonPolygon
         layerBounds = @map._getLeafletLayer(42).getBounds()
         expect(@map.leafletMap.getBounds().contains layerBounds).to.be.false
-        @map.fit @geoJsonPolygon
+        expect(@map.fit @geoJsonPolygon).to.eql @map
         expect(@map.leafletMap.getBounds().contains layerBounds).to.be.true
 
       it 'fits point', ->
@@ -276,6 +289,20 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         @map.fit @geoJsonPoint
         expect(@map.leafletMap.getBounds().contains layerLatLng).to.be.true
 
+      it 'fits feature collection', ->
+        @geoJsonPoint.properties = id: 42
+        @geoJsonPolygon.properties = id: 43
+        geoJsonCollection = createFeatureCollection [
+            @geoJsonPoint, @geoJsonPolygon]
+        @map.load geoJsonCollection
+        layerLatLng = @map._getLeafletLayer(42).getLatLng()
+        expect(@map.leafletMap.getBounds().contains layerLatLng).to.be.false
+        layerBounds = @map._getLeafletLayer(43).getBounds()
+        expect(@map.leafletMap.getBounds().contains layerBounds).to.be.false
+        @map.fit geoJsonCollection
+        expect(@map.leafletMap.getBounds().contains layerLatLng).to.be.true
+        expect(@map.leafletMap.getBounds().contains layerBounds).to.be.true
+
       it 'ignores an empty argument', ->
         @map.fit()
 
@@ -285,7 +312,7 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         @map.load @geoJsonPolygon
         layerBounds = @map._getLeafletLayer(42).getBounds()
         expect(@map.leafletMap.getBounds().intersects layerBounds).to.be.false
-        @map.panTo @geoJsonPolygon
+        expect(@map.panTo @geoJsonPolygon).to.eql @map
         expect(@map.leafletMap.getBounds().intersects layerBounds).to.be.true
 
       it 'pans to point', ->
@@ -296,6 +323,20 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         @map.panTo @geoJsonPoint
         expect(@map.leafletMap.getBounds().contains layerLatLng).to.be.true
 
+      it 'pans to feature collection', ->
+        @geoJsonPoint.properties = id: 42
+        @geoJsonPolygon.properties = id: 43
+        geoJsonCollection = createFeatureCollection [
+            @geoJsonPoint, @geoJsonPolygon]
+        @map.load geoJsonCollection
+        layerLatLng = @map._getLeafletLayer(42).getLatLng()
+        expect(@map.leafletMap.getBounds().contains layerLatLng).to.be.false
+        layerBounds = @map._getLeafletLayer(43).getBounds()
+        expect(@map.leafletMap.getBounds().intersects layerBounds).to.be.false
+        @map.panTo geoJsonCollection
+        expect(@map.leafletMap.getBounds().contains layerLatLng).to.be.true
+        #expect(@map.leafletMap.getBounds().intersects layerBounds).to.be.true
+
       it 'ignores an empty argument', ->
         @map.panTo()
 
@@ -303,7 +344,7 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
     describe '#selectTileProvider', ->
       it 'allows to change the tile provider', ->
         # TODO
-        @map.selectTileProvider 'map'
+        expect(@map.selectTileProvider 'map').to.eql @map
 
     describe '#remove', ->
       it 'accepts id', ->
@@ -312,7 +353,7 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         layer = @map._getLeafletLayer 42
         expect(layer).to.exist
         expect(layer._map).to.exist
-        @map.remove 42
+        expect(@map.remove 42).to.eql @map
         expect(@map._getLeafletLayer 42).not.to.exist
         expect(layer._map).not.to.exist
 
