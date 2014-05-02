@@ -7,7 +7,7 @@
     window.Meppit = {};
   }
 
-  window.Meppit.VERSION = '0.0.1';
+  window.Meppit.VERSION = '0.1.0';
 
   isArray = Meppit.isArray = function(data) {
     return Object.prototype.toString.call(data) === '[object Array]';
@@ -134,7 +134,7 @@
   counter = 0;
 
   BaseClass = (function() {
-    BaseClass.prototype.VERSION = '0.0.1';
+    BaseClass.prototype.VERSION = '0.1.0';
 
     function BaseClass() {
       this.cid = counter++;
