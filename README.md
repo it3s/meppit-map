@@ -1,4 +1,4 @@
-# Meppit-Map 0.0.1
+# Meppit-Map 0.1.0
 
 [![Build Status](https://travis-ci.org/it3s/meppit-map.svg)](https://travis-ci.org/it3s/meppit-map)
 
@@ -60,7 +60,7 @@ enableGeoJsonTile | `Boolean` | `true` | Whether features will be loaded automat
  * `setZoom( <Number> zoom )` returns `this`
  * `zoomIn( <Number> delta? )` returns `this`
  * `zoomOut( <Number> delta? )` returns `this`
- * `getURL( <GeoJSON Feature> )` returns `String`
+ * `getURL( <GeoJSON Feature> feature )` returns `String`
  * `destroy()` returns `undefined`
 
 
