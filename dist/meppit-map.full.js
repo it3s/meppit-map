@@ -353,7 +353,7 @@
       geojsonTileURL: '#{baseURL}geoJSON/{z}/{x}/{y}',
       enableEditor: true,
       enablePopup: true,
-      enableGeoJsonTile: true
+      enableGeoJsonTile: false
     };
 
     function Map(options) {
@@ -373,6 +373,7 @@
     };
 
     Map.prototype.load = function(data, callback) {
+      var layer, layers, _i, _len;
       if (isNumber(data)) {
         this.load(this.getURL(data), callback);
       } else if (isString(data)) {
@@ -386,6 +387,11 @@
           };
         })(this));
       } else {
+        layers = this._getLeafletLayers(data);
+        for (_i = 0, _len = layers.length; _i < _len; _i++) {
+          layer = layers[_i];
+          this._removeLeafletLayer(layer);
+        }
         this._geoJsonManager.addData(data);
         if (typeof callback === "function") {
           callback(data);
@@ -414,21 +420,11 @@
     };
 
     Map.prototype.remove = function(data) {
-      var feature, geoJSON, layer, _i, _len, _ref, _ref1;
-      if (data.type === 'FeatureCollection') {
-        _ref = data.features;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          feature = _ref[_i];
-          this.remove(feature);
-        }
-      } else {
-        layer = this._getLeafletLayer(data);
-        this.leafletMap.removeLayer(layer);
-        this.__clearLayerEventListeners(layer);
-        geoJSON = layer.toGeoJSON();
-        if ((_ref1 = this.leafletLayers) != null) {
-          _ref1[this._getGeoJSONId(geoJSON != null ? geoJSON : this._getGeoJSONHash(geoJSON))] = void 0;
-        }
+      var layer, layers, _i, _len;
+      layers = this._getLeafletLayers(data);
+      for (_i = 0, _len = layers.length; _i < _len; _i++) {
+        layer = layers[_i];
+        this._removeLeafletLayer(layer);
       }
       return this;
     };
@@ -562,16 +558,11 @@
     };
 
     Map.prototype._getBounds = function(data) {
-      var bounds, feature, features, layer, _i, _len;
-      if (data.type === 'FeatureCollection') {
-        features = data.features.slice();
-      } else {
-        features = [data];
-      }
+      var bounds, layer, layers, _i, _len;
+      layers = this._getLeafletLayers(data);
       bounds = void 0;
-      for (_i = 0, _len = features.length; _i < _len; _i++) {
-        feature = features[_i];
-        layer = this._getLeafletLayer(feature);
+      for (_i = 0, _len = layers.length; _i < _len; _i++) {
+        layer = layers[_i];
         if (layer != null) {
           if (layer.getBounds != null) {
             if (bounds == null) {
@@ -710,6 +701,21 @@
       return getHash(JSON.stringify(feature));
     };
 
+    Map.prototype._getLeafletLayers = function(data) {
+      var feature, features, _i, _len, _results;
+      if (data.type === 'FeatureCollection') {
+        features = data.features.slice();
+      } else {
+        features = [data];
+      }
+      _results = [];
+      for (_i = 0, _len = features.length; _i < _len; _i++) {
+        feature = features[_i];
+        _results.push(this._getLeafletLayer(feature));
+      }
+      return _results;
+    };
+
     Map.prototype._getLeafletLayer = function(data) {
       var _ref;
       if (isNumber(data) || isString(data)) {
@@ -717,6 +723,17 @@
       } else if (data != null) {
         return this._getLeafletLayer((_ref = this._getGeoJSONId(data)) != null ? _ref : this._getGeoJSONHash(data));
       }
+    };
+
+    Map.prototype._removeLeafletLayer = function(layer) {
+      var geoJSON, _ref;
+      if (layer == null) {
+        return;
+      }
+      this._geoJsonManager.removeLayer(layer);
+      this.__clearLayerEventListeners(layer);
+      geoJSON = layer.toGeoJSON();
+      return (_ref = this.leafletLayers) != null ? _ref[this._getGeoJSONId(geoJSON != null ? geoJSON : this._getGeoJSONHash(geoJSON))] = void 0 : void 0;
     };
 
     Map.prototype.__addLayerEventListeners = function(feature, layer) {

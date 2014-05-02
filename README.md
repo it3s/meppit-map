@@ -35,7 +35,7 @@ featureURL | `String` | `'#{baseURL}features/#{id}'` | The URL used to retrieve 
 geojsonTileURL | `String` | `'#{baseURL}geoJSON/{z}/{x}/{y}'` | The URL used to retrieve features for a given tile coordinates
 enableEditor | `Boolean` | `true` | Whether the features can be edited and drawn
 enablePopup | `Boolean` | `true` | Whether a popup should be shown when a features is clicked
-enableGeoJsonTile | `Boolean` | `true` | Whether features will be loaded automatically
+enableGeoJsonTile | `Boolean` | `false` | Whether features will be loaded automatically
 
 
 #### Methods

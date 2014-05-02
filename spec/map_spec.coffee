@@ -95,6 +95,19 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         expect(@map.toGeoJSON()).to.eql createFeatureCollection(
                                               [@geoJsonPoint])
 
+      it 'avoids loadings a GeoJSON feature already loaded', ->
+        @map.load @geoJsonPoint
+        @map.load @geoJsonPoint
+        expect(@map.toGeoJSON()).to.eql createFeatureCollection(
+                                              [@geoJsonPoint])
+
+      it 'avoids loadings a GeoJSON feature collection already loaded', ->
+        featureCollection = createFeatureCollection [@geoJsonPoint]
+        @map.load featureCollection
+        @map.load featureCollection
+        expect(@map.toGeoJSON()).to.eql createFeatureCollection(
+                                              [@geoJsonPoint])
+
       it 'loads GeoJSON feature collection', ->
         featureCollection = createFeatureCollection [@geoJsonPoint]
         @map.load featureCollection

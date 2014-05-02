@@ -220,7 +220,7 @@ class Map extends BaseClass
     geojsonTileURL: '#{baseURL}geoJSON/{z}/{x}/{y}'
     enableEditor: true
     enablePopup: true
-    enableGeoJsonTile: true
+    enableGeoJsonTile: false
 
   constructor: (@options = {}) ->
     super
@@ -246,6 +246,11 @@ class Map extends BaseClass
         else
           callback? null
     else
+      # Removes the old version of already loaded features before loading the
+      # new one.
+      layers = @_getLeafletLayers data
+      for layer in layers
+        @_removeLeafletLayer layer
       @_geoJsonManager.addData data
       callback? data
     this
@@ -267,17 +272,9 @@ class Map extends BaseClass
   remove: (data) ->
     # Removes the given features fom map
     # `data` can be a GeoJSON or a feature id
-    if data.type == 'FeatureCollection'
-      @remove feature for feature in data.features
-    else
-      layer = @_getLeafletLayer data
-      @leafletMap.removeLayer layer
-      @__clearLayerEventListeners layer
-      # Remove the reference from hash used to associate the feature id
-      # with the leaflet layer
-      geoJSON = layer.toGeoJSON()
-      @leafletLayers?[@_getGeoJSONId geoJSON ? @_getGeoJSONHash geoJSON] =
-          undefined
+    layers = @_getLeafletLayers data
+    for layer in layers
+      @_removeLeafletLayer layer
     this
 
   edit: (data, callback) ->
@@ -357,13 +354,9 @@ class Map extends BaseClass
     interpolate url, id: @_getGeoJSONId(feature)
 
   _getBounds: (data) ->
-    if data.type is 'FeatureCollection'
-        features = data.features.slice()
-    else
-        features = [data]
+    layers = @_getLeafletLayers data
     bounds = undefined
-    for feature in features
-      layer = @_getLeafletLayer feature
+    for layer in layers
       if layer?
         if layer.getBounds?
           bounds ?= layer.getBounds()
@@ -455,11 +448,28 @@ class Map extends BaseClass
   _getGeoJSONHash: (feature) ->
     getHash JSON.stringify(feature)
 
+  _getLeafletLayers: (data) ->
+    if data.type is 'FeatureCollection'
+        features = data.features.slice()
+    else
+        features = [data]
+    (@_getLeafletLayer feature for feature in features)
+
   _getLeafletLayer: (data) ->
     if isNumber(data) or isString(data)
       @leafletLayers[data]
     else if data?
       @_getLeafletLayer(@_getGeoJSONId(data) ? @_getGeoJSONHash(data))
+
+  _removeLeafletLayer: (layer) ->
+    return if not layer?
+    @_geoJsonManager.removeLayer layer
+    @__clearLayerEventListeners layer
+    # Remove the reference from hash used to associate the feature id
+    # with the leaflet layer
+    geoJSON = layer.toGeoJSON()
+    @leafletLayers?[@_getGeoJSONId geoJSON ? @_getGeoJSONHash geoJSON] =
+        undefined
 
   __addLayerEventListeners: (feature, layer) ->
     layer.on 'click', (e) => @openPopupAt feature, undefined, e.latlng
