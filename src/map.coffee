@@ -101,13 +101,13 @@ class Map extends Meppit.BaseClass
     this
 
   fit: (data) ->
-    return if not data?
+    return this if not data?
     bounds = @_getBounds data
-    @leafletMap.fitBounds bounds if bounds?
+    @leafletMap.fitBounds bounds, animate: false if bounds?
     this
 
   panTo: (data) ->
-    return if not data?
+    return this if not data?
     bounds = @_getBounds data
     @leafletMap.panInsideBounds bounds if bounds?
     this

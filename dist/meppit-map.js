@@ -482,11 +482,13 @@
     Map.prototype.fit = function(data) {
       var bounds;
       if (data == null) {
-        return;
+        return this;
       }
       bounds = this._getBounds(data);
       if (bounds != null) {
-        this.leafletMap.fitBounds(bounds);
+        this.leafletMap.fitBounds(bounds, {
+          animate: false
+        });
       }
       return this;
     };
@@ -494,7 +496,7 @@
     Map.prototype.panTo = function(data) {
       var bounds;
       if (data == null) {
-        return;
+        return this;
       }
       bounds = this._getBounds(data);
       if (bounds != null) {
