@@ -33,7 +33,7 @@ class EditorManager extends Meppit.BaseClass
     @cancel()
     @_currentCallback = callback
     @map.editing = true
-    type = if isString data then data else data.geometry.type
+    type = if Meppit.isString data then data else data.geometry.type
     type = type.toLowerCase()
     @_drawing =
       if type is 'polygon'

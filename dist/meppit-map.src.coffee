@@ -136,7 +136,7 @@ class EditorManager extends Meppit.BaseClass
     @cancel()
     @_currentCallback = callback
     @map.editing = true
-    type = if isString data then data else data.geometry.type
+    type = if Meppit.isString data then data else data.geometry.type
     type = type.toLowerCase()
     @_drawing =
       if type is 'polygon'
@@ -237,10 +237,10 @@ class Map extends Meppit.BaseClass
   load: (data, callback) ->
     # Loads GeoJSON `data` and then calls `callback`
     # Expect coordinates to be in [lon, lat] order
-    if isNumber data  # received the feature id
+    if Meppit.isNumber data  # received the feature id
       @load @getURL(data), callback
-    else if isString data  # got an url
-      requestJSON data, (resp) =>
+    else if Meppit.isString data  # got an url
+      Meppit.requestJSON data, (resp) =>
         if resp
           @load resp, callback
         else
@@ -350,8 +350,8 @@ class Map extends Meppit.BaseClass
   getURL: (feature) ->
     url = feature?.properties?[@getOption 'urlPropertyName']
     return url if url?
-    url = interpolate @getOption('featureURL'), baseURL: @_getBaseURL()
-    interpolate url, id: @_getGeoJSONId(feature)
+    url = Meppit.interpolate @getOption('featureURL'), baseURL: @_getBaseURL()
+    Meppit.interpolate url, id: @_getGeoJSONId(feature)
 
   _getBounds: (data) ->
     layers = @_getLeafletLayers data
@@ -378,10 +378,10 @@ class Map extends Meppit.BaseClass
           if location.port isnt '' then (':' + location.port) else '' ) + "/"
 
   _getGeoJsonTileURL: ->
-    interpolate @getOption('geojsonTileURL'), baseURL: @_getBaseURL()
+    Meppit.interpolate @getOption('geojsonTileURL'), baseURL: @_getBaseURL()
 
   _ensureLeafletMap: ->
-    @element ?= if isString @getOption('element')
+    @element ?= if Meppit.isString @getOption('element')
       document.getElementById @getOption 'element'
     else
       @getOption 'element'
@@ -442,11 +442,11 @@ class Map extends Meppit.BaseClass
     @leafletMap.addControl.apply @leafletMap, arguments
 
   _getGeoJSONId: (feature) ->
-    return feature if isNumber feature  # the argument is the id itself
+    return feature if Meppit.isNumber feature  # the argument is the id itself
     feature.properties?[@getOption 'idPropertyName']
 
   _getGeoJSONHash: (feature) ->
-    getHash JSON.stringify(feature)
+    Meppit.getHash JSON.stringify(feature)
 
   _getLeafletLayers: (data) ->
     if data.type is 'FeatureCollection'
@@ -456,7 +456,7 @@ class Map extends Meppit.BaseClass
     (@_getLeafletLayer feature for feature in features)
 
   _getLeafletLayer: (data) ->
-    if isNumber(data) or isString(data)
+    if Meppit.isNumber(data) or Meppit.isString(data)
       @leafletLayers[data]
     else if data?
       @_getLeafletLayer(@_getGeoJSONId(data) ? @_getGeoJSONHash(data))
@@ -525,9 +525,9 @@ class Popup extends Meppit.BaseClass
     return '' if not feature
     template = feature.properties?.popupContent ? @getOption('popupTemplate')
     # interpolate the feature properties
-    content = interpolate template, feature.properties
+    content = Meppit.interpolate template, feature.properties
     # interpolate urls and images
-    content = interpolate content, url: @map.getURL feature
+    content = Meppit.interpolate content, url: @map.getURL feature
     content
 
   _createPopup: -> @_popup = new L.Popup()

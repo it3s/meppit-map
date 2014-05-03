@@ -238,7 +238,7 @@
       this.cancel();
       this._currentCallback = callback;
       this.map.editing = true;
-      type = isString(data) ? data : data.geometry.type;
+      type = Meppit.isString(data) ? data : data.geometry.type;
       type = type.toLowerCase();
       this._drawing = type === 'polygon' ? new L.Draw.Polygon(this.map.leafletMap) : type === 'linestring' ? new L.Draw.Polyline(this.map.leafletMap) : new L.Draw.Marker(this.map.leafletMap);
       this.map.leafletMap.once('draw:created', (function(_this) {
@@ -368,10 +368,10 @@
 
     Map.prototype.load = function(data, callback) {
       var layer, layers, _i, _len;
-      if (isNumber(data)) {
+      if (Meppit.isNumber(data)) {
         this.load(this.getURL(data), callback);
-      } else if (isString(data)) {
-        requestJSON(data, (function(_this) {
+      } else if (Meppit.isString(data)) {
+        Meppit.requestJSON(data, (function(_this) {
           return function(resp) {
             if (resp) {
               return _this.load(resp, callback);
@@ -543,10 +543,10 @@
       if (url != null) {
         return url;
       }
-      url = interpolate(this.getOption('featureURL'), {
+      url = Meppit.interpolate(this.getOption('featureURL'), {
         baseURL: this._getBaseURL()
       });
-      return interpolate(url, {
+      return Meppit.interpolate(url, {
         id: this._getGeoJSONId(feature)
       });
     };
@@ -590,14 +590,14 @@
     };
 
     Map.prototype._getGeoJsonTileURL = function() {
-      return interpolate(this.getOption('geojsonTileURL'), {
+      return Meppit.interpolate(this.getOption('geojsonTileURL'), {
         baseURL: this._getBaseURL()
       });
     };
 
     Map.prototype._ensureLeafletMap = function() {
       if (this.element == null) {
-        this.element = isString(this.getOption('element')) ? document.getElementById(this.getOption('element')) : this.getOption('element');
+        this.element = Meppit.isString(this.getOption('element')) ? document.getElementById(this.getOption('element')) : this.getOption('element');
       }
       return this.leafletMap != null ? this.leafletMap : this.leafletMap = new L.Map(this.element, this.__getLeafletMapOptions());
     };
@@ -685,14 +685,14 @@
 
     Map.prototype._getGeoJSONId = function(feature) {
       var _ref;
-      if (isNumber(feature)) {
+      if (Meppit.isNumber(feature)) {
         return feature;
       }
       return (_ref = feature.properties) != null ? _ref[this.getOption('idPropertyName')] : void 0;
     };
 
     Map.prototype._getGeoJSONHash = function(feature) {
-      return getHash(JSON.stringify(feature));
+      return Meppit.getHash(JSON.stringify(feature));
     };
 
     Map.prototype._getLeafletLayers = function(data) {
@@ -712,7 +712,7 @@
 
     Map.prototype._getLeafletLayer = function(data) {
       var _ref;
-      if (isNumber(data) || isString(data)) {
+      if (Meppit.isNumber(data) || Meppit.isString(data)) {
         return this.leafletLayers[data];
       } else if (data != null) {
         return this._getLeafletLayer((_ref = this._getGeoJSONId(data)) != null ? _ref : this._getGeoJSONHash(data));
@@ -819,8 +819,8 @@
         return '';
       }
       template = (_ref = (_ref1 = feature.properties) != null ? _ref1.popupContent : void 0) != null ? _ref : this.getOption('popupTemplate');
-      content = interpolate(template, feature.properties);
-      content = interpolate(content, {
+      content = Meppit.interpolate(template, feature.properties);
+      content = Meppit.interpolate(content, {
         url: this.map.getURL(feature)
       });
       return content;

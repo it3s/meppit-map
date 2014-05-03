@@ -24,9 +24,9 @@ class Popup extends Meppit.BaseClass
     return '' if not feature
     template = feature.properties?.popupContent ? @getOption('popupTemplate')
     # interpolate the feature properties
-    content = interpolate template, feature.properties
+    content = Meppit.interpolate template, feature.properties
     # interpolate urls and images
-    content = interpolate content, url: @map.getURL feature
+    content = Meppit.interpolate content, url: @map.getURL feature
     content
 
   _createPopup: -> @_popup = new L.Popup()
