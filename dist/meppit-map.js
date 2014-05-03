@@ -329,7 +329,7 @@
 
     return EditorManager;
 
-  })(BaseClass);
+  })(Meppit.BaseClass);
 
   window.Meppit.EditorManager = EditorManager;
 
@@ -775,7 +775,7 @@
 
     return Map;
 
-  })(BaseClass);
+  })(Meppit.BaseClass);
 
   window.Meppit.Map = Map;
 
@@ -832,7 +832,7 @@
 
     return Popup;
 
-  })(BaseClass);
+  })(Meppit.BaseClass);
 
   window.Meppit.PopupManager = Popup;
 

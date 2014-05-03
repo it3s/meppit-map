@@ -101,7 +101,7 @@ Meppit.BaseClass = BaseClass
 
 define? [], -> window.Meppit
 
-class EditorManager extends BaseClass
+class EditorManager extends Meppit.BaseClass
   # TODO: implement undo
   defaultOptions:
     drawControl: false
@@ -208,7 +208,7 @@ class EditorManager extends BaseClass
 
 window.Meppit.EditorManager = EditorManager
 
-class Map extends BaseClass
+class Map extends Meppit.BaseClass
   defaultOptions:
     element: document.createElement 'div'
     zoom: 14
@@ -499,7 +499,7 @@ class Map extends BaseClass
 
 window.Meppit.Map = Map
 
-class Popup extends BaseClass
+class Popup extends Meppit.BaseClass
   defaultOptions:
     popupTemplate: '<h1 class="title"><a href="#{url}">#{name}</a></h1>'
 

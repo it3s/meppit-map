@@ -1,4 +1,4 @@
-class EditorManager extends BaseClass
+class EditorManager extends Meppit.BaseClass
   # TODO: implement undo
   defaultOptions:
     drawControl: false

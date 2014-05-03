@@ -1,4 +1,4 @@
-class Popup extends BaseClass
+class Popup extends Meppit.BaseClass
   defaultOptions:
     popupTemplate: '<h1 class="title"><a href="#{url}">#{name}</a></h1>'
 

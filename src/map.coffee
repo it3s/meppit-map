@@ -1,4 +1,4 @@
-class Map extends BaseClass
+class Map extends Meppit.BaseClass
   defaultOptions:
     element: document.createElement 'div'
     zoom: 14
