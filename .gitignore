@@ -11,6 +11,7 @@ spec/*.js
 !spec/test-suite.js
 !spec/main.js
 *.js.map
+!dist/*.js.map
 
 *.seed
 *.log

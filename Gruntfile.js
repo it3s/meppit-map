@@ -15,9 +15,7 @@ module.exports = function(grunt) {
 
     concat: {
       options: {
-        separator: "\n\n",
-        stripBanners: true,
-        banner: '<%= banner %>'
+        separator: "\n",
       },
       full_js: {
         src: [
@@ -40,18 +38,19 @@ module.exports = function(grunt) {
     uglify: {
       options: {
         sourceMap: true,
-        banner: '<%= banner %>'
+        sourceMapIncludeSources: true,
+        sourceMapIn: 'dist/<%= pkg.name.replace(".js", "") %>.js.map'
       },
       dist: {
         files: {
           'dist/<%= pkg.name.replace(".js", "") %>.min.js':
-                            [ 'dist/<%= pkg.name.replace(".js", "") %>.js']
+            [ 'dist/<%= pkg.name.replace(".js", "") %>.js']
         }
       },
       full: {
         files: {
           'dist/<%= pkg.name.replace(".js", "") %>.full.min.js':
-                                                   ['<%= concat.full_js.dest %>']
+            ['<%= concat.full_js.dest %>']
         }
       }
     },
@@ -96,7 +95,8 @@ module.exports = function(grunt) {
           sourceMap: true
         },
         files: {
-          'dist/<%= pkg.name.replace(".js", "") %>.js': ['src/main.coffee', 'src/**/*.coffee']
+          'dist/<%= pkg.name.replace(".js", "") %>.js':
+            ['src/main.coffee', 'src/**/*.coffee']
         }
       },
       spec: {
