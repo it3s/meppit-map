@@ -934,21 +934,23 @@
     };
 
     Map.prototype.__defineLeafletDefaultImagePath = function() {
-      var meppitMapRe, path, script, scripts, src, _i, _len;
+      var imagePath, meppitMapRe, path, script, scripts, src, _i, _len;
       if (L.Icon.Default.imagePath != null) {
         return;
       }
       scripts = document.getElementsByTagName('script');
       meppitMapRe = /[\/^]meppit-map[\-\._]?([\w\-\._]*)\.js\??/;
+      imagePath = '/assets';
       for (_i = 0, _len = scripts.length; _i < _len; _i++) {
         script = scripts[_i];
         src = script.src;
         if (src.match(meppitMapRe)) {
           path = src.split(meppitMapRe)[0];
-          L.Icon.Default.imagePath = (path ? path + '/' : '') + 'images';
-          return;
+          imagePath = (path ? path + '/' : '') + 'images';
+          break;
         }
       }
+      return L.Icon.Default.imagePath = imagePath;
     };
 
     return Map;

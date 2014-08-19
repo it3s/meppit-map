@@ -614,12 +614,14 @@ class Map extends Meppit.BaseClass
     return if L.Icon.Default.imagePath?
     scripts = document.getElementsByTagName 'script'
     meppitMapRe = /[\/^]meppit-map[\-\._]?([\w\-\._]*)\.js\??/
+    imagePath = '/assets'
     for script in scripts
       src = script.src
       if src.match meppitMapRe
         path = src.split(meppitMapRe)[0]
-        L.Icon.Default.imagePath = (if path then path + '/' else '') + 'images'
-        return
+        imagePath = (if path then path + '/' else '') + 'images'
+        break
+    L.Icon.Default.imagePath = imagePath
 
 window.Meppit.Map = Map
 
