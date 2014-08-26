@@ -113,7 +113,7 @@ class EditorManager extends Meppit.BaseClass
     @_uneditedLayerProps = {}
 
   edit: (data, callback) ->
-    layer = @map._getLeafletLayer data
+    layer = @map._getLeafletLayers(data)[0]
     return if @_currentLayer? and @_currentLayer is layer
     @done()
     @_currentCallback = callback
@@ -129,7 +129,7 @@ class EditorManager extends Meppit.BaseClass
       edit()
     else
       @map.load data, =>
-        @_currentLayer = @map._getLeafletLayer data
+        @_currentLayer = @map._getLeafletLayers(data)[0]
         edit()
 
   draw: (data, callback) ->
@@ -161,9 +161,12 @@ class EditorManager extends Meppit.BaseClass
     @map.editing = false
 
   cancel: ->
-    @_revertLayer @_currentLayer
+    @revert()
     @done()  # FIXME: Should we call the same callback here?
     @map.editing = false
+
+  revert: ->
+    @_revertLayer @_currentLayer
 
   _initToolbars: ->
       return if not @getOption 'drawControl'
@@ -245,6 +248,17 @@ class Map extends Meppit.BaseClass
           @load resp, callback
         else
           callback? null
+    else if Meppit.isArray data # got a list of id or url
+      count = 0
+      respCollection =
+        "type": "FeatureCollection",
+        "features": []
+      for data_ in data
+        @load data_, (resp) ->
+          count++
+          respCollection.features.push resp
+          if count == data.length
+            callback respCollection
     else
       # Removes the old version of already loaded features before loading the
       # new one.
@@ -296,6 +310,10 @@ class Map extends Meppit.BaseClass
 
   cancel: ->
     @_editorManager?.cancel()
+    this
+
+  revert: ->
+    @_editorManager?.revert()
     this
 
   openPopup: (data, content) ->

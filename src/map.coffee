@@ -35,6 +35,17 @@ class Map extends Meppit.BaseClass
           @load resp, callback
         else
           callback? null
+    else if Meppit.isArray data # got a list of id or url
+      count = 0
+      respCollection =
+        "type": "FeatureCollection",
+        "features": []
+      for data_ in data
+        @load data_, (resp) ->
+          count++
+          respCollection.features.push resp
+          if count == data.length
+            callback respCollection
     else
       # Removes the old version of already loaded features before loading the
       # new one.
@@ -86,6 +97,10 @@ class Map extends Meppit.BaseClass
 
   cancel: ->
     @_editorManager?.cancel()
+    this
+
+  revert: ->
+    @_editorManager?.revert()
     this
 
   openPopup: (data, content) ->

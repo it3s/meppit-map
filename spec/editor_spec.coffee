@@ -25,27 +25,27 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw'],
     describe '#edit', ->
       it 'enables the path edit mode', ->
         fakeLayer = editing: enable: sinon.spy()
-        @mapStub._getLeafletLayer.returns fakeLayer
+        @mapStub._getLeafletLayers.returns [fakeLayer]
         @editor.edit 1
         expect(fakeLayer.editing.enable.calledOnce).to.be.true
 
       it 'enables the marker edit mode', ->
         fakeLayer = dragging: enable: sinon.spy()
-        @mapStub._getLeafletLayer.returns fakeLayer
+        @mapStub._getLeafletLayers.returns [fakeLayer]
         @editor.edit 1
         expect(fakeLayer.dragging.enable.calledOnce).to.be.true
 
       it 'does nothing if try to edit the layer already been edited', ->
         fakeLayer = editing: enable: sinon.spy()
-        @mapStub._getLeafletLayer.returns fakeLayer
+        @mapStub._getLeafletLayers.returns [fakeLayer]
         @editor.edit 1
         @editor.edit 1
         expect(fakeLayer.editing.enable.calledOnce).to.be.true
 
       it 'loads new GeoJSON then enable the layer edit mode', ->
         fakeLayer = editing: enable: sinon.spy()
-        @mapStub._getLeafletLayer.onFirstCall().returns undefined
-        @mapStub._getLeafletLayer.onSecondCall().returns fakeLayer
+        @mapStub._getLeafletLayers.onFirstCall().returns [undefined]
+        @mapStub._getLeafletLayers.onSecondCall().returns [fakeLayer]
         @mapStub.load.yields [@geoJsonPoint]
         @editor.edit @geoJsonPoint
         expect(fakeLayer.editing.enable.calledOnce).to.be.true
@@ -54,11 +54,12 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw'],
 
     describe '#done', ->
       it 'calls the callback passed to #edit', ->
-        @mapStub._getLeafletLayer.returns
+        @mapStub._getLeafletLayers.returns [
           editing:
             enable: ->
             disable: ->
           toGeoJSON: -> 'GeoJSON'
+        ]
         callback = sinon.spy()
         @editor.edit 1, callback
         @editor.done()
@@ -67,11 +68,12 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw'],
 
       it 'disables the edit mode', ->
         disableSpy = sinon.spy()
-        @mapStub._getLeafletLayer.returns
+        @mapStub._getLeafletLayers.returns [
           editing:
             enable: ->
             disable: disableSpy
           toGeoJSON: -> 'GeoJSON'
+        ]
         callback = sinon.spy()
         @editor.edit 1, callback
         @editor.done()
@@ -79,11 +81,12 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw'],
 
       it 'disables dragging', ->
         disableSpy = sinon.spy()
-        @mapStub._getLeafletLayer.returns
+        @mapStub._getLeafletLayers.returns [
           dragging:
             enable: ->
             disable: disableSpy
           toGeoJSON: -> 'GeoJSON'
+        ]
         callback = sinon.spy()
         @editor.edit 1, callback
         @editor.done()
@@ -92,11 +95,12 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw'],
     describe '#cancel', ->
       it 'disables the edit mode', ->
         disableSpy = sinon.spy()
-        @mapStub._getLeafletLayer.returns
+        @mapStub._getLeafletLayers.returns [
           editing:
             enable: ->
             disable: disableSpy
           toGeoJSON: -> 'GeoJSON'
+        ]
         callback = sinon.spy()
         @editor.edit 1, callback
         @editor.cancel()
@@ -109,7 +113,7 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw'],
             enable: ->
             disable: disableSpy
           toGeoJSON: -> 'GeoJSON'
-        @mapStub._getLeafletLayer.returns layer
+        @mapStub._getLeafletLayers.returns [layer]
         callback = sinon.spy()
         revertSpy = sinon.spy @editor, '_revertLayer'
         @editor.edit 1, callback

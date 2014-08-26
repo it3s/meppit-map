@@ -155,6 +155,26 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         server.respond()
         server.restore()
 
+      it 'loads via ajax receiving an array of ids as argument', (done) ->
+        server = sinon.fakeServer.create()
+        server.xhr.useFilters = true
+        server.xhr.addFilter (method, url) -> not url.match(/url\/to/)
+        server.respondWith 'GET', 'url/to/GeoJSON/42',
+            [200, "Content-Type": "application/json", JSON.stringify(
+                @geoJsonPoint)]
+        server.respondWith 'GET', 'url/to/GeoJSON/43',
+            [200, "Content-Type": "application/json", JSON.stringify(
+                @geoJsonPolygon)]
+        @map.setOption 'featureURL', 'url/to/GeoJSON/#{id}'
+        @map.load [42, 43], (resp) =>
+          expected = createFeatureCollection(
+              [@geoJsonPoint, @geoJsonPolygon])
+          expect(resp).to.eql expected
+          expect(@map.toGeoJSON()).to.eql expected
+          done()
+        server.respond()
+        server.restore()
+
     describe '#show', ->
       it 'loads and fit GeoJSON feature collection', (done) ->
         @geoJsonPoint.properties = id: 42
