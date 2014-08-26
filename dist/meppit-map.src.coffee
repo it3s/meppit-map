@@ -279,6 +279,14 @@ class Map extends Meppit.BaseClass
     # Returns a GeoJSON FeatureCollection containing all features loaded
     @_geoJsonManager.toGeoJSON()
 
+  toSimpleGeoJSON: ->
+    # Return a simplified version of GeoJSON FeatureCollection containing all
+    # features loaded whithout the `properties` field
+    geoJSON = @_geoJsonManager.toGeoJSON()
+    for feature in geoJSON.features
+      feature.properties = {}
+    geoJSON
+
   get: (id) ->
     # Returns a GeoJSON Feature or undefined
     @_getLeafletLayer(id)?.toGeoJSON()

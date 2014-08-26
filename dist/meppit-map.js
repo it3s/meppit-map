@@ -428,6 +428,17 @@
       return this._geoJsonManager.toGeoJSON();
     };
 
+    Map.prototype.toSimpleGeoJSON = function() {
+      var feature, geoJSON, _i, _len, _ref;
+      geoJSON = this._geoJsonManager.toGeoJSON();
+      _ref = geoJSON.features;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        feature = _ref[_i];
+        feature.properties = {};
+      }
+      return geoJSON;
+    };
+
     Map.prototype.get = function(id) {
       var _ref;
       return (_ref = this._getLeafletLayer(id)) != null ? _ref.toGeoJSON() : void 0;
