@@ -61,6 +61,7 @@ enableGeoJsonTile | `Boolean` | `false` | Whether features will be loaded automa
  * `zoomIn( <Number> delta? )` returns `this`
  * `zoomOut( <Number> delta? )` returns `this`
  * `getURL( <GeoJSON Feature> feature )` returns `String`
+ * `refresh()` returns `this`
  * `destroy()` returns `undefined`
 
 

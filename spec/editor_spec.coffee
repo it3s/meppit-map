@@ -35,6 +35,12 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw'],
         @editor.edit 1
         expect(fakeLayer.dragging.enable.calledOnce).to.be.true
 
+      it 'enables the geometry collection edit mode', ->
+        fakeLayer = dragging: enable: sinon.spy()
+        @mapStub._getLeafletLayers.returns [{ _layers: { 1: fakeLayer } }]
+        @editor.edit 1
+        expect(fakeLayer.dragging.enable.calledOnce).to.be.true
+
       it 'does nothing if try to edit the layer already been edited', ->
         fakeLayer = editing: enable: sinon.spy()
         @mapStub._getLeafletLayers.returns [fakeLayer]

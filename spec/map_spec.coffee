@@ -89,6 +89,24 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         expect(leafletMapOptions).to.have.property 'center'
         expect(leafletMapOptions).to.have.property 'zoom'
 
+    describe '#refresh', ->
+      it 'calls _onResize', ->
+        spy = sinon.spy(@map.leafletMap, '_onResize')
+        @map.refresh()
+        expect(spy.calledOnce).to.be.true
+
+    describe '#toGeoJSON', ->
+      it 'keeps the features properties', ->
+        @geoJsonPoint.properties = { "foo": "bar" }
+        expect(@map.load @geoJsonPoint).to.eql @map
+        expect(@map.toGeoJSON().features[0].properties).to.eql { "foo": "bar" }
+
+    describe '#toSimpleGeoJSON', ->
+      it 'removes the features properties', ->
+        @geoJsonPoint.properties = { "foo": "bar" }
+        expect(@map.load @geoJsonPoint).to.eql @map
+        expect(@map.toSimpleGeoJSON().features[0].properties).to.eql {}
+
     describe '#load', ->
       it 'loads GeoJSON feature', ->
         expect(@map.load @geoJsonPoint).to.eql @map

@@ -18,8 +18,12 @@ class EditorManager extends Meppit.BaseClass
     edit = =>
       return if not @_currentLayer
       @_backupLayer @_currentLayer
-      @_currentLayer?.editing?.enable()  # Paths
-      @_currentLayer?.dragging?.enable()  # Markers
+      enable = (layer) ->
+        return if not layer
+        layer.editing?.enable()  # Paths
+        layer.dragging?.enable()  # Markers
+        enable layer_ for id, layer_ of layer._layers if layer._layers? # Collection
+      enable @_currentLayer
       @map.editing = true
     # Try to load the data if it was not found
     if @_currentLayer

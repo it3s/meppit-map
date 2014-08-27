@@ -166,6 +166,10 @@ class Map extends Meppit.BaseClass
     url = Meppit.interpolate @getOption('featureURL'), baseURL: @_getBaseURL()
     Meppit.interpolate url, id: @_getGeoJSONId(feature)
 
+  refresh: ->
+    @leafletMap._onResize()
+    this
+
   _getBounds: (data) ->
     layers = @_getLeafletLayers data
     bounds = undefined
