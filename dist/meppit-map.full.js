@@ -7,7 +7,7 @@
     window.Meppit = {};
   }
 
-  window.Meppit.VERSION = '0.1.1';
+  window.Meppit.VERSION = '0.1.2';
 
   isArray = Meppit.isArray = function(data) {
     return Object.prototype.toString.call(data) === '[object Array]';
@@ -134,7 +134,7 @@
   counter = 0;
 
   BaseClass = (function() {
-    BaseClass.prototype.VERSION = '0.1.1';
+    BaseClass.prototype.VERSION = '0.1.2';
 
     function BaseClass() {
       this.cid = counter++;
@@ -194,7 +194,7 @@
 
     EditorManager.prototype.edit = function(data, callback) {
       var edit, layer;
-      layer = this.map._getLeafletLayer(data);
+      layer = this.map._getLeafletLayers(data)[0];
       if ((this._currentLayer != null) && this._currentLayer === layer) {
         return;
       }
@@ -203,21 +203,33 @@
       this._currentLayer = layer;
       edit = (function(_this) {
         return function() {
-          var _ref, _ref1, _ref2, _ref3;
+          var enable;
           if (!_this._currentLayer) {
             return;
           }
           _this._backupLayer(_this._currentLayer);
-          if ((_ref = _this._currentLayer) != null) {
-            if ((_ref1 = _ref.editing) != null) {
+          enable = function(layer) {
+            var id, layer_, _ref, _ref1, _ref2, _results;
+            if (!layer) {
+              return;
+            }
+            if ((_ref = layer.editing) != null) {
+              _ref.enable();
+            }
+            if ((_ref1 = layer.dragging) != null) {
               _ref1.enable();
             }
-          }
-          if ((_ref2 = _this._currentLayer) != null) {
-            if ((_ref3 = _ref2.dragging) != null) {
-              _ref3.enable();
+            if (layer._layers != null) {
+              _ref2 = layer._layers;
+              _results = [];
+              for (id in _ref2) {
+                layer_ = _ref2[id];
+                _results.push(enable(layer_));
+              }
+              return _results;
             }
-          }
+          };
+          enable(_this._currentLayer);
           return _this.map.editing = true;
         };
       })(this);
@@ -226,7 +238,7 @@
       } else {
         return this.map.load(data, (function(_this) {
           return function() {
-            _this._currentLayer = _this.map._getLeafletLayer(data);
+            _this._currentLayer = _this.map._getLeafletLayers(data)[0];
             return edit();
           };
         })(this));
@@ -273,9 +285,13 @@
     };
 
     EditorManager.prototype.cancel = function() {
-      this._revertLayer(this._currentLayer);
+      this.revert();
       this.done();
       return this.map.editing = false;
+    };
+
+    EditorManager.prototype.revert = function() {
+      return this._revertLayer(this._currentLayer);
     };
 
     EditorManager.prototype._initToolbars = function() {
@@ -367,7 +383,7 @@
     };
 
     Map.prototype.load = function(data, callback) {
-      var layer, layers, _i, _len;
+      var count, data_, layer, layers, respCollection, _i, _j, _len, _len1;
       if (Meppit.isNumber(data)) {
         this.load(this.getURL(data), callback);
       } else if (Meppit.isString(data)) {
@@ -380,10 +396,26 @@
             }
           };
         })(this));
+      } else if (Meppit.isArray(data)) {
+        count = 0;
+        respCollection = {
+          "type": "FeatureCollection",
+          "features": []
+        };
+        for (_i = 0, _len = data.length; _i < _len; _i++) {
+          data_ = data[_i];
+          this.load(data_, function(resp) {
+            count++;
+            respCollection.features.push(resp);
+            if (count === data.length) {
+              return callback(respCollection);
+            }
+          });
+        }
       } else {
         layers = this._getLeafletLayers(data);
-        for (_i = 0, _len = layers.length; _i < _len; _i++) {
-          layer = layers[_i];
+        for (_j = 0, _len1 = layers.length; _j < _len1; _j++) {
+          layer = layers[_j];
           this._removeLeafletLayer(layer);
         }
         this._geoJsonManager.addData(data);
@@ -406,6 +438,17 @@
 
     Map.prototype.toGeoJSON = function() {
       return this._geoJsonManager.toGeoJSON();
+    };
+
+    Map.prototype.toSimpleGeoJSON = function() {
+      var feature, geoJSON, _i, _len, _ref;
+      geoJSON = this._geoJsonManager.toGeoJSON();
+      _ref = geoJSON.features;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        feature = _ref[_i];
+        feature.properties = {};
+      }
+      return geoJSON;
     };
 
     Map.prototype.get = function(id) {
@@ -454,6 +497,14 @@
       var _ref;
       if ((_ref = this._editorManager) != null) {
         _ref.cancel();
+      }
+      return this;
+    };
+
+    Map.prototype.revert = function() {
+      var _ref;
+      if ((_ref = this._editorManager) != null) {
+        _ref.revert();
       }
       return this;
     };
@@ -551,6 +602,11 @@
       return Meppit.interpolate(url, {
         id: this._getGeoJSONId(feature)
       });
+    };
+
+    Map.prototype.refresh = function() {
+      this.leafletMap._onResize();
+      return this;
     };
 
     Map.prototype._getBounds = function(data) {
