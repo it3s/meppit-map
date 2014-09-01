@@ -1,4 +1,5 @@
 class Map extends Meppit.BaseClass
+  MAXZOOM: 16
   defaultOptions:
     element: document.createElement 'div'
     zoom: 14
@@ -126,7 +127,7 @@ class Map extends Meppit.BaseClass
   fit: (data) ->
     return this if not data?
     bounds = @_getBounds data
-    @leafletMap.fitBounds bounds, animate: false if bounds?
+    @leafletMap.fitBounds bounds, maxZoom: @MAXZOOM
     this
 
   panTo: (data) ->
@@ -170,17 +171,55 @@ class Map extends Meppit.BaseClass
     @leafletMap._onResize()
     this
 
+  locate: (onSuccess, onError) ->
+    # binds events
+    _onSuccess = (e) ->
+      location = if not e.latlng then undefined else {
+        "type": "Feature"
+        "bbox": [[e.bounds.getWest(), e.bounds.getSouth()],
+                 [e.bounds.getEast(), e.bounds.getNorth()]]
+        "geometry": {
+          "type": "Point",
+          "coordinates": [e.latlng.lng, e.latlng.lat]
+        }
+      }
+      onSuccess {
+        location: location
+        accuracy: e.accuracy
+        altitude: e.altitude
+        heading: e.heading
+        speed: e.speed
+        timestamp: e.timestamp
+      }
+
+    _onError = (e) ->
+      onError()
+
+    @leafletMap.once 'locationfound', _onSuccess if onSuccess
+    @leafletMap.once 'locationerror', _onError   if onError
+    @leafletMap.once 'locationfound locationerror', =>
+      # unbinds the unused callback
+      @leafletMap.off 'locationfound', _onSuccess
+      @leafletMap.off 'locationerror', _onError
+    # locates the user
+    @leafletMap.locate {setView: true, maxZoom: @MAXZOOM}
+    this
+
   _getBounds: (data) ->
     layers = @_getLeafletLayers data
     bounds = undefined
-    for layer in layers
-      if layer?
-        if layer.getBounds?
-          bounds ?= layer.getBounds()
-          bounds.extend layer.getBounds()
-        else if layer.getLatLng?
-          bounds ?= L.latLngBounds [layer.getLatLng()]
-          bounds.extend layer.getLatLng()
+    if layers.length > 0
+      for layer in layers
+        if layer?
+          if layer.getBounds?
+            bounds ?= layer.getBounds()
+            bounds.extend layer.getBounds()
+          else if layer.getLatLng?
+            bounds ?= L.latLngBounds [layer.getLatLng()]
+            bounds.extend layer.getLatLng()
+    else if data.bbox
+      bounds = L.latLngBounds [[L.latLng(data.bbox[0][1], data.bbox[0][0])],
+                               [L.latLng(data.bbox[1][1], data.bbox[1][0])]]
     bounds
 
   _getBaseURL: ->
@@ -270,7 +309,9 @@ class Map extends Meppit.BaseClass
         features = data.features.slice()
     else
         features = [data]
-    (@_getLeafletLayer feature for feature in features)
+    layers = (@_getLeafletLayer feature for feature in features)
+    return [] if layers.length is 1 and layers[0] is undefined
+    layers
 
   _getLeafletLayer: (data) ->
     if Meppit.isNumber(data) or Meppit.isString(data)

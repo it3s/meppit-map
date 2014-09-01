@@ -30,7 +30,7 @@ getDate = Meppit.getDate = (date) ->
             'July', 'August', 'September', 'October', 'November', 'December']
   date ?= new Date()
   day = date.getDate()
-  month = date.getMonth() + 1
+  month = date.getMonth()
   yy = date.getYear()
   year = if yy < 1000 then yy + 1900 else yy
 

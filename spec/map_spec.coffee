@@ -490,4 +490,57 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         expect(L.Icon.Default.imagePath).to.equal imagePath
         L.Icon.Default.imagePath = imagePath
 
+    describe '#locate', ->
+      it 'binds success callback', ->
+        spy = sinon.spy(@map.leafletMap, 'once')
+        onSuccess = ->
+        onError = ->
+        @map.locate onSuccess, onError
+        expect(spy.calledWith 'locationfound').to.be.true
+
+      it 'binds error callback', ->
+        spy = sinon.spy(@map.leafletMap, 'once')
+        onSuccess = ->
+        onError = ->
+        @map.locate onSuccess, onError
+        expect(spy.calledWith 'locationerror').to.be.true
+
+      it 'calls success callback once on success', ->
+        sinon.stub(@map.leafletMap, 'locate')
+        onSuccess = sinon.spy()
+        onError = ->
+        @map.locate onSuccess, onError
+        @map.leafletMap.fire 'locationfound'
+        @map.leafletMap.fire 'locationfound'
+        expect(onSuccess.called).to.be.true
+
+      it 'calls error callback once on fail', ->
+        sinon.stub(@map.leafletMap, 'locate')
+        onSuccess = ->
+        onError = sinon.spy()
+        @map.locate onSuccess, onError
+        @map.leafletMap.fire 'locationerror'
+        @map.leafletMap.fire 'locationerror'
+        expect(onError.calledOnce).to.be.true
+
+      it 'unbinds error callback on success', ->
+        sinon.stub(@map.leafletMap, 'locate')
+        onSuccess = sinon.spy()
+        onError = sinon.spy()
+        @map.locate onSuccess, onError
+        @map.leafletMap.fire 'locationfound'
+        @map.leafletMap.fire 'locationerror'
+        expect(onSuccess.called).to.be.true
+        expect(onError.called).to.be.false
+
+      it 'unbinds success callback on fail', ->
+        sinon.stub(@map.leafletMap, 'locate')
+        onSuccess = sinon.spy()
+        onError = sinon.spy()
+        @map.locate onSuccess, onError
+        @map.leafletMap.fire 'locationerror'
+        @map.leafletMap.fire 'locationfound'
+        expect(onError.called).to.be.true
+        expect(onSuccess.called).to.be.false
+
   {}

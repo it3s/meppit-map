@@ -53,7 +53,7 @@
       date = new Date();
     }
     day = date.getDate();
-    month = date.getMonth() + 1;
+    month = date.getMonth();
     yy = date.getYear();
     year = yy < 1000 ? yy + 1900 : yy;
     return "" + months[month] + " " + day + " " + year;
@@ -352,6 +352,8 @@
   Map = (function(_super) {
     __extends(Map, _super);
 
+    Map.prototype.MAXZOOM = 16;
+
     Map.prototype.defaultOptions = {
       element: document.createElement('div'),
       zoom: 14,
@@ -536,11 +538,9 @@
         return this;
       }
       bounds = this._getBounds(data);
-      if (bounds != null) {
-        this.leafletMap.fitBounds(bounds, {
-          animate: false
-        });
-      }
+      this.leafletMap.fitBounds(bounds, {
+        maxZoom: this.MAXZOOM
+      });
       return this;
     };
 
@@ -609,25 +609,72 @@
       return this;
     };
 
+    Map.prototype.locate = function(onSuccess, onError) {
+      var _onError, _onSuccess;
+      _onSuccess = function(e) {
+        var location;
+        location = !e.latlng ? void 0 : {
+          "type": "Feature",
+          "bbox": [[e.bounds.getWest(), e.bounds.getSouth()], [e.bounds.getEast(), e.bounds.getNorth()]],
+          "geometry": {
+            "type": "Point",
+            "coordinates": [e.latlng.lng, e.latlng.lat]
+          }
+        };
+        return onSuccess({
+          location: location,
+          accuracy: e.accuracy,
+          altitude: e.altitude,
+          heading: e.heading,
+          speed: e.speed,
+          timestamp: e.timestamp
+        });
+      };
+      _onError = function(e) {
+        return onError();
+      };
+      if (onSuccess) {
+        this.leafletMap.once('locationfound', _onSuccess);
+      }
+      if (onError) {
+        this.leafletMap.once('locationerror', _onError);
+      }
+      this.leafletMap.once('locationfound locationerror', (function(_this) {
+        return function() {
+          _this.leafletMap.off('locationfound', _onSuccess);
+          return _this.leafletMap.off('locationerror', _onError);
+        };
+      })(this));
+      this.leafletMap.locate({
+        setView: true,
+        maxZoom: this.MAXZOOM
+      });
+      return this;
+    };
+
     Map.prototype._getBounds = function(data) {
       var bounds, layer, layers, _i, _len;
       layers = this._getLeafletLayers(data);
       bounds = void 0;
-      for (_i = 0, _len = layers.length; _i < _len; _i++) {
-        layer = layers[_i];
-        if (layer != null) {
-          if (layer.getBounds != null) {
-            if (bounds == null) {
-              bounds = layer.getBounds();
+      if (layers.length > 0) {
+        for (_i = 0, _len = layers.length; _i < _len; _i++) {
+          layer = layers[_i];
+          if (layer != null) {
+            if (layer.getBounds != null) {
+              if (bounds == null) {
+                bounds = layer.getBounds();
+              }
+              bounds.extend(layer.getBounds());
+            } else if (layer.getLatLng != null) {
+              if (bounds == null) {
+                bounds = L.latLngBounds([layer.getLatLng()]);
+              }
+              bounds.extend(layer.getLatLng());
             }
-            bounds.extend(layer.getBounds());
-          } else if (layer.getLatLng != null) {
-            if (bounds == null) {
-              bounds = L.latLngBounds([layer.getLatLng()]);
-            }
-            bounds.extend(layer.getLatLng());
           }
         }
+      } else if (data.bbox) {
+        bounds = L.latLngBounds([[L.latLng(data.bbox[0][1], data.bbox[0][0])], [L.latLng(data.bbox[1][1], data.bbox[1][0])]]);
       }
       return bounds;
     };
@@ -754,18 +801,25 @@
     };
 
     Map.prototype._getLeafletLayers = function(data) {
-      var feature, features, _i, _len, _results;
+      var feature, features, layers;
       if (data.type === 'FeatureCollection') {
         features = data.features.slice();
       } else {
         features = [data];
       }
-      _results = [];
-      for (_i = 0, _len = features.length; _i < _len; _i++) {
-        feature = features[_i];
-        _results.push(this._getLeafletLayer(feature));
+      layers = (function() {
+        var _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = features.length; _i < _len; _i++) {
+          feature = features[_i];
+          _results.push(this._getLeafletLayer(feature));
+        }
+        return _results;
+      }).call(this);
+      if (layers.length === 1 && layers[0] === void 0) {
+        return [];
       }
-      return _results;
+      return layers;
     };
 
     Map.prototype._getLeafletLayer = function(data) {
