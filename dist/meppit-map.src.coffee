@@ -216,7 +216,7 @@ class EditorManager extends Meppit.BaseClass
 window.Meppit.EditorManager = EditorManager
 
 class Map extends Meppit.BaseClass
-  MAXZOOM: 16
+  MAXZOOM: 15
   defaultOptions:
     element: document.createElement 'div'
     zoom: 14
@@ -344,7 +344,10 @@ class Map extends Meppit.BaseClass
   fit: (data) ->
     return this if not data?
     bounds = @_getBounds data
-    @leafletMap.fitBounds bounds, maxZoom: @MAXZOOM
+    @leafletMap.fitBounds bounds, {
+      maxZoom: @MAXZOOM,
+      animate: false
+    } if bounds?
     this
 
   panTo: (data) ->

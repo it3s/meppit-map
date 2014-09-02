@@ -7,7 +7,7 @@
     window.Meppit = {};
   }
 
-  window.Meppit.VERSION = '0.1.2';
+  window.Meppit.VERSION = '0.1.3';
 
   isArray = Meppit.isArray = function(data) {
     return Object.prototype.toString.call(data) === '[object Array]';
@@ -134,7 +134,7 @@
   counter = 0;
 
   BaseClass = (function() {
-    BaseClass.prototype.VERSION = '0.1.2';
+    BaseClass.prototype.VERSION = '0.1.3';
 
     function BaseClass() {
       this.cid = counter++;
@@ -352,7 +352,7 @@
   Map = (function(_super) {
     __extends(Map, _super);
 
-    Map.prototype.MAXZOOM = 16;
+    Map.prototype.MAXZOOM = 15;
 
     Map.prototype.defaultOptions = {
       element: document.createElement('div'),
@@ -538,9 +538,12 @@
         return this;
       }
       bounds = this._getBounds(data);
-      this.leafletMap.fitBounds(bounds, {
-        maxZoom: this.MAXZOOM
-      });
+      if (bounds != null) {
+        this.leafletMap.fitBounds(bounds, {
+          maxZoom: this.MAXZOOM,
+          animate: false
+        });
+      }
       return this;
     };
 
