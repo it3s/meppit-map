@@ -373,6 +373,7 @@
       Map.__super__.constructor.apply(this, arguments);
       this.log('Initializing Map');
       this.editing = false;
+      this.buttons = {};
       this._ensureLeafletMap();
       this._ensureTileProviders();
       this._ensureGeoJsonManager();
@@ -511,6 +512,42 @@
       return this;
     };
 
+    Map.prototype.addButton = function(id, icon, callback, title, position) {
+      var button;
+      if (position == null) {
+        position = 'topleft';
+      }
+      button = L.easyButton(icon, callback, title, '');
+      button.options.position = position;
+      this.leafletMap.addControl(button);
+      this.buttons[id] = button;
+      return this;
+    };
+
+    Map.prototype.removeButton = function(id) {
+      var button;
+      button = this.buttons[id];
+      if (button) {
+        this.leafletMap.removeControl(button);
+      }
+      this.buttons[id] = void 0;
+      return this;
+    };
+
+    Map.prototype.showButton = function(id) {
+      var button;
+      button = this.buttons[id];
+      button._container.style.display = '';
+      return this;
+    };
+
+    Map.prototype.hideButton = function(id) {
+      var button;
+      button = this.buttons[id];
+      button._container.style.display = 'none';
+      return this;
+    };
+
     Map.prototype.openPopup = function(data, content) {
       this.openPopupAt(data, content);
       return this;
@@ -612,16 +649,36 @@
       return this;
     };
 
-    Map.prototype.locate = function(onSuccess, onError) {
-      var _onError, _onSuccess;
+    Map.prototype.locate = function(onSuccess, onError, timeout) {
+      var timer, _locationFromIP, _onError, _onSuccess;
+      if (timeout == null) {
+        timeout = 5000;
+      }
+      timer = null;
+      _locationFromIP = function() {
+        var ipPos;
+        ipPos = L.GeoIP.getPosition();
+        if ((ipPos != null) && ipPos.lat !== 0 && ipPos.lng !== 0) {
+          _onSuccess({
+            latlng: ipPos,
+            bounds: L.latLngBounds([[ipPos.lat - 0.05, ipPos.lng - 0.05], [ipPos.lat + 0.05, ipPos.lng + 0.05]])
+          });
+          return true;
+        } else {
+          return false;
+        }
+      };
       _onSuccess = function(e) {
-        var location;
-        location = !e.latlng ? void 0 : {
+        var bbox, coordinates, location;
+        clearTimeout(timer);
+        bbox = !e.bounds ? void 0 : [[e.bounds.getWest(), e.bounds.getSouth()], [e.bounds.getEast(), e.bounds.getNorth()]];
+        coordinates = !e.latlng ? void 0 : [e.latlng.lng, e.latlng.lat];
+        location = !coordinates ? void 0 : {
           "type": "Feature",
-          "bbox": [[e.bounds.getWest(), e.bounds.getSouth()], [e.bounds.getEast(), e.bounds.getNorth()]],
+          "bbox": bbox,
           "geometry": {
             "type": "Point",
-            "coordinates": [e.latlng.lng, e.latlng.lat]
+            "coordinates": coordinates
           }
         };
         return onSuccess({
@@ -634,7 +691,10 @@
         });
       };
       _onError = function(e) {
-        return onError();
+        clearTimeout(timer);
+        if (!_locationFromIP()) {
+          return onError(e);
+        }
       };
       if (onSuccess) {
         this.leafletMap.once('locationfound', _onSuccess);
@@ -652,6 +712,9 @@
         setView: true,
         maxZoom: this.MAXZOOM
       });
+      timer = setTimeout(function() {
+        return _locationFromIP();
+      }, timeout);
       return this;
     };
 

@@ -22,7 +22,9 @@ module.exports = function(grunt) {
           'dist/<%= pkg.name.replace(".js", "") %>.js',
           'lib/leaflet.js',
           'lib/leaflet.draw.js',
-          'lib/TileLayer.GeoJSON.js'
+          'lib/TileLayer.GeoJSON.js',
+          'lib/leaflet-geoip.js',
+          'lib/easy-button.js'
         ],
         dest: 'dist/<%= pkg.name.replace(".js", "") %>.full.js'
       },

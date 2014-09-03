@@ -17,6 +17,7 @@ class Map extends Meppit.BaseClass
     super
     @log 'Initializing Map'
     @editing = false
+    @buttons = {}
     @_ensureLeafletMap()
     @_ensureTileProviders()
     @_ensureGeoJsonManager()
@@ -112,6 +113,29 @@ class Map extends Meppit.BaseClass
     @_editorManager?.revert()
     this
 
+  addButton: (id, icon, callback, title, position = 'topleft') ->
+    button = L.easyButton icon, callback, title, ''
+    button.options.position = position
+    @leafletMap.addControl button
+    @buttons[id] = button
+    this
+
+  removeButton: (id) ->
+    button = @buttons[id]
+    @leafletMap.removeControl button if button
+    @buttons[id] = undefined
+    this
+
+  showButton: (id) ->
+    button = @buttons[id]
+    button._container.style.display = ''
+    this
+
+  hideButton: (id) ->
+    button = @buttons[id]
+    button._container.style.display = 'none'
+    this
+
   openPopup: (data, content) ->
     @openPopupAt data, content
     this
@@ -174,16 +198,34 @@ class Map extends Meppit.BaseClass
     @leafletMap._onResize()
     this
 
-  locate: (onSuccess, onError) ->
+  locate: (onSuccess, onError, timeout=5000) ->
+    timer = null
+    _locationFromIP = ->
+      ipPos = L.GeoIP.getPosition()
+      if ipPos? and ipPos.lat isnt 0 and ipPos.lng isnt 0
+        _onSuccess {
+            latlng: ipPos
+            bounds: L.latLngBounds [[ipPos.lat - 0.05, ipPos.lng - 0.05],
+                                    [ipPos.lat + 0.05, ipPos.lng + 0.05]]
+        }
+        return true
+      else
+        return false
+
     # binds events
     _onSuccess = (e) ->
-      location = if not e.latlng then undefined else {
+      clearTimeout timer
+      bbox = if not e.bounds then undefined else
+        [[e.bounds.getWest(), e.bounds.getSouth()],
+         [e.bounds.getEast(), e.bounds.getNorth()]]
+      coordinates = if not e.latlng then undefined else
+        [e.latlng.lng, e.latlng.lat]
+      location = if not coordinates then undefined else {
         "type": "Feature"
-        "bbox": [[e.bounds.getWest(), e.bounds.getSouth()],
-                 [e.bounds.getEast(), e.bounds.getNorth()]]
+        "bbox": bbox
         "geometry": {
           "type": "Point",
-          "coordinates": [e.latlng.lng, e.latlng.lat]
+          "coordinates": coordinates
         }
       }
       onSuccess {
@@ -196,7 +238,8 @@ class Map extends Meppit.BaseClass
       }
 
     _onError = (e) ->
-      onError()
+      clearTimeout timer
+      onError(e) if not _locationFromIP()
 
     @leafletMap.once 'locationfound', _onSuccess if onSuccess
     @leafletMap.once 'locationerror', _onError   if onError
@@ -206,6 +249,9 @@ class Map extends Meppit.BaseClass
       @leafletMap.off 'locationerror', _onError
     # locates the user
     @leafletMap.locate {setView: true, maxZoom: @MAXZOOM}
+    timer = setTimeout ->
+      _locationFromIP()
+    , timeout
     this
 
   _getBounds: (data) ->

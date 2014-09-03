@@ -1,5 +1,5 @@
 define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
-    '../lib/TileLayer.GeoJSON'],
+    '../lib/TileLayer.GeoJSON', '../lib/leaflet-geoip', '../lib/easy-button'],
     (Meppit, L) ->
   'use strict'
 
@@ -490,7 +490,34 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         expect(L.Icon.Default.imagePath).to.equal imagePath
         L.Icon.Default.imagePath = imagePath
 
+    describe '#addButton', ->
+      it 'adds control', ->
+        spy = sinon.spy(@map.leafletMap, 'addControl')
+        @map.addButton 'id', 'fa-circle', (->), 'title', 'topleft'
+        expect(spy.calledOnce).to.be.true
+
+    describe '#removeButton', ->
+      it 'removes control', ->
+        spy = sinon.spy(@map.leafletMap, 'removeControl')
+        @map.addButton 'id', 'fa-circle', (->), 'title', 'topleft'
+        @map.removeButton 'id'
+        expect(spy.calledOnce).to.be.true
+
+    describe '#showButton/#hideButton', ->
+      it 'makes control visible/invisible', ->
+        @map.addButton 'id', 'fa-circle', (->), 'title', 'topleft'
+        expect(@map.buttons['id']._container.style.display).to.equal ''
+        @map.hideButton 'id'
+        expect(@map.buttons['id']._container.style.display).to.equal 'none'
+        @map.showButton 'id'
+        expect(@map.buttons['id']._container.style.display).to.equal ''
+
     describe '#locate', ->
+      beforeEach ->
+        @sandbox = sinon.sandbox.create()
+      afterEach ->
+        @sandbox.restore()
+
       it 'binds success callback', ->
         spy = sinon.spy(@map.leafletMap, 'once')
         onSuccess = ->
@@ -515,7 +542,8 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         expect(onSuccess.called).to.be.true
 
       it 'calls error callback once on fail', ->
-        sinon.stub(@map.leafletMap, 'locate')
+        @sandbox.stub(@map.leafletMap, 'locate')
+        @sandbox.stub(L.GeoIP, 'getPosition')
         onSuccess = ->
         onError = sinon.spy()
         @map.locate onSuccess, onError
@@ -524,7 +552,7 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         expect(onError.calledOnce).to.be.true
 
       it 'unbinds error callback on success', ->
-        sinon.stub(@map.leafletMap, 'locate')
+        @sandbox.stub(@map.leafletMap, 'locate')
         onSuccess = sinon.spy()
         onError = sinon.spy()
         @map.locate onSuccess, onError
@@ -534,7 +562,8 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         expect(onError.called).to.be.false
 
       it 'unbinds success callback on fail', ->
-        sinon.stub(@map.leafletMap, 'locate')
+        @sandbox.stub(@map.leafletMap, 'locate')
+        @sandbox.stub(L.GeoIP, 'getPosition')
         onSuccess = sinon.spy()
         onError = sinon.spy()
         @map.locate onSuccess, onError
@@ -542,5 +571,16 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         @map.leafletMap.fire 'locationfound'
         expect(onError.called).to.be.true
         expect(onSuccess.called).to.be.false
+
+      it 'gets location from ip if geolocation fails', ->
+        @sandbox.stub(@map.leafletMap, 'locate')
+        @sandbox.stub(L.GeoIP, 'getPosition').returns(L.latLng(-23, 42))
+        onSuccess = sinon.spy()
+        onError = sinon.spy()
+        @map.locate onSuccess, onError
+        @map.leafletMap.fire 'locationerror'
+        expect(onError.calledOnce).to.be.false
+        expect(onSuccess.calledOnce).to.be.true
+        expect(onSuccess.args[0][0].location.geometry.coordinates).to.deep.equal [42, -23]
 
   {}

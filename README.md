@@ -63,6 +63,10 @@ enableGeoJsonTile | `Boolean` | `false` | Whether features will be loaded automa
  * `getURL( <GeoJSON Feature> feature )` returns `String`
  * `refresh()` returns `this`
  * `location( <Function> onSuccess, <Function> onError )` returns `this`
+ * `addButton( <String> id, <String> icon, <Function> callback, <String> title, <String> position? )` returns `this`
+ * `removeButton( <String> id )` returns `this`
+ * `showButton( <String> id )` returns `this`
+ * `hideButton( <String> id )` returns `this`
  * `destroy()` returns `undefined`
 
 
