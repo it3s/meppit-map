@@ -1,6 +1,6 @@
 {
   "name": "meppit-map",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "main": "dist/meppit-map.full.min.js",
   "description": "javascript library for Meppit's map component",
   "repository": {
