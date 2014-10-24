@@ -1,7 +1,8 @@
 (function() {
-  var BaseClass, EditorManager, GroupsManager, Map, Popup, counter, getDate, getHash, interpolate, isArray, isNumber, isString, requestJSON, reverseCoordinates, _log, _warn,
+  var BaseClass, EditorManager, Group, GroupsManager, Map, Popup, and_ops, contains_ops, counter, equal_ops, eval_expr, getDate, getHash, in_ops, interpolate, isArray, isNumber, isString, not_equal_ops, not_ops, or_ops, requestJSON, reverseCoordinates, _log, _warn,
     __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   if (window.Meppit == null) {
     window.Meppit = {};
@@ -349,6 +350,92 @@
 
   window.Meppit.EditorManager = EditorManager;
 
+  equal_ops = ['==', 'is', 'equal', 'equals'];
+
+  not_equal_ops = ['!=', 'isnt', 'not equal', 'not equals', 'different'];
+
+  in_ops = ['in'];
+
+  contains_ops = ['contains', 'has'];
+
+  not_ops = ['!', 'not'];
+
+  or_ops = ['or'];
+
+  and_ops = ['and'];
+
+  eval_expr = function(expr, obj) {
+    var objValue, operator, res, v, _i, _len, _ref, _ref1, _ref2;
+    if ((expr == null) || (expr.operator == null)) {
+      return true;
+    }
+    if (obj == null) {
+      return false;
+    }
+    operator = expr.operator;
+    objValue = (_ref = obj[expr.property]) != null ? _ref : obj.properties[expr.property];
+    if (__indexOf.call(equal_ops, operator) >= 0) {
+      return objValue === expr.value;
+    } else if (__indexOf.call(not_equal_ops, operator) >= 0) {
+      return !objValue === expr.value;
+    } else if (__indexOf.call(in_ops, operator) >= 0) {
+      return (objValue != null) && __indexOf.call(expr.value, objValue) >= 0;
+    } else if (__indexOf.call(contains_ops, operator) >= 0 && Object.prototype.toString.call(expr.value) === '[object Array]') {
+      res = true;
+      _ref1 = expr.value;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        v = _ref1[_i];
+        res = res && (objValue != null) && __indexOf.call(objValue, v) >= 0;
+      }
+      return res;
+    } else if (__indexOf.call(contains_ops, operator) >= 0) {
+      return objValue && (_ref2 = expr.value, __indexOf.call(objValue, _ref2) >= 0);
+    } else if (__indexOf.call(not_ops, operator) >= 0) {
+      return !eval_expr(expr.child, obj);
+    } else if (__indexOf.call(or_ops, operator) >= 0) {
+      return eval_expr(expr.left, obj) || eval_expr(expr.right, obj);
+    } else if (__indexOf.call(and_ops, operator) >= 0) {
+      return eval_expr(expr.left, obj) && eval_expr(expr.right, obj);
+    }
+  };
+
+  window.ee = eval_expr;
+
+  Group = (function(_super) {
+    __extends(Group, _super);
+
+    function Group(data) {
+      this.data = data;
+      this._initializeData();
+      this.__featureGroup = this._createLeafletFeatureGroup();
+    }
+
+    Group.prototype.getName = function() {
+      return this.data.name;
+    };
+
+    Group.prototype.addLayer = function(layer) {
+      return this.__featureGroup.addLayer(layer);
+    };
+
+    Group.prototype.match = function(feature) {
+      return eval_expr(this.rule, feature);
+    };
+
+    Group.prototype._initializeData = function() {
+      this.name = this.data.name;
+      this.id = this.data.id;
+      return this.rule = this.data.rule;
+    };
+
+    Group.prototype._createLeafletFeatureGroup = function() {
+      return L.featureGroup();
+    };
+
+    return Group;
+
+  })(Meppit.BaseClass);
+
   GroupsManager = (function(_super) {
     __extends(GroupsManager, _super);
 
@@ -363,6 +450,8 @@
       GroupsManager.__super__.constructor.apply(this, arguments);
       this.log('Initializing Groups Manager...');
       this.__groups = {};
+      this.__groupsIds = [];
+      this._createDefaultGroup();
       this.loadGroups((_ref = this.options.groups) != null ? _ref : this.options.layers);
     }
 
@@ -382,26 +471,56 @@
       if (this.hasGroup(group)) {
         return;
       }
-      this.log("Adding Group '" + group.name + "'...");
+      this.log("Adding group '" + group.name + "'...");
       this._createGroup(group);
       this._populateGroup(group);
       this._refreshGroup(group);
       return this;
     };
 
-    GroupsManager.prototype.addFeature = function(feature) {};
+    GroupsManager.prototype.count = function() {
+      return this.__groupsIds.length;
+    };
+
+    GroupsManager.prototype.addFeature = function(feature) {
+      var group, layer, _ref;
+      if (this.count() === 0) {
+        return;
+      }
+      group = this._getGroupFor(feature);
+      this.log("Adding feature " + ((_ref = feature.properties) != null ? _ref.name : void 0) + " to group '" + group.name + "'...");
+      layer = this.map._getLeafletLayer(feature);
+      return group.addLayer(layer);
+    };
+
+    GroupsManager.prototype._getGroupFor = function(feature) {
+      var group, groupId, _i, _len, _ref;
+      _ref = this.__groupsIds;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        groupId = _ref[_i];
+        group = this.__groups[groupId];
+        if (group.match(feature)) {
+          return group;
+        }
+      }
+      return this.__defaultGroup;
+    };
 
     GroupsManager.prototype._getGroupId = function(group) {
       return group.id;
     };
 
     GroupsManager.prototype._createGroup = function(group) {
-      var featureGroup;
-      featureGroup = this._createLeafletFeatureGroups(group);
-      return this.__groups[this._getGroupId(group)] = {
-        featureGroup: featureGroup,
-        groupData: group
-      };
+      var groupId;
+      groupId = this._getGroupId(group);
+      this.__groupsIds.push(groupId);
+      return this.__groups[groupId] = new Group(group);
+    };
+
+    GroupsManager.prototype._createDefaultGroup = function() {
+      return this.__defaultGroup = new Group({
+        name: 'Others'
+      });
     };
 
     GroupsManager.prototype._populateGroup = function(group) {};
@@ -409,11 +528,8 @@
     GroupsManager.prototype._refreshGroup = function(group) {};
 
     GroupsManager.prototype.hasGroup = function(group) {
-      return false;
-    };
-
-    GroupsManager.prototype._createLeafletFeatureGroups = function(group) {
-      return L.featureGroup();
+      var _ref;
+      return _ref = this._getGroupId(group), __indexOf.call(this.__groupsIds, _ref) >= 0;
     };
 
     return GroupsManager;

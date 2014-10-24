@@ -59,7 +59,7 @@
             "properties": {
               "name": 'Feature 1',
               "id": 1,
-              "tags": ["a", "c"]
+              "tags": ["b", "c"]
             }
           },
           {
@@ -71,7 +71,7 @@
             "properties": {
               "name": 'Feature 2',
               "id": 2,
-              "tags": ["b", "c"]
+              "tags": ["a", "c"]
             }
           },
           {
@@ -101,7 +101,7 @@
             strokeColor: "#ff0000",
             visible: true,
             rule: {
-              operator: "in",
+              operator: "has",
               property: "tags",
               value: ["a"]
             }
@@ -114,7 +114,7 @@
             strokeColor: "#00ff00",
             visible: true,
             rule: {
-              operator: "in",
+              operator: "has",
               property: "tags",
               value: ["b"]
             }
