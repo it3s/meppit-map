@@ -1,5 +1,5 @@
 (function() {
-  var BaseClass, EditorManager, Map, Popup, counter, getDate, getHash, interpolate, isArray, isNumber, isString, requestJSON, reverseCoordinates, _log, _warn,
+  var BaseClass, EditorManager, GroupsManager, Map, Popup, counter, getDate, getHash, interpolate, isArray, isNumber, isString, requestJSON, reverseCoordinates, _log, _warn,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -349,6 +349,79 @@
 
   window.Meppit.EditorManager = EditorManager;
 
+  GroupsManager = (function(_super) {
+    __extends(GroupsManager, _super);
+
+    GroupsManager.prototype.defaultOptions = {
+      foo: 'bar'
+    };
+
+    function GroupsManager(map, options) {
+      var _ref;
+      this.map = map;
+      this.options = options != null ? options : {};
+      GroupsManager.__super__.constructor.apply(this, arguments);
+      this.log('Initializing Groups Manager...');
+      this.__groups = {};
+      this.loadGroups((_ref = this.options.groups) != null ? _ref : this.options.layers);
+    }
+
+    GroupsManager.prototype.loadGroups = function(groups) {
+      var group, _i, _len;
+      if (groups == null) {
+        return;
+      }
+      for (_i = 0, _len = groups.length; _i < _len; _i++) {
+        group = groups[_i];
+        this.addGroup(group);
+      }
+      return this;
+    };
+
+    GroupsManager.prototype.addGroup = function(group) {
+      if (this.hasGroup(group)) {
+        return;
+      }
+      this.log("Adding Group '" + group.name + "'...");
+      this._createGroup(group);
+      this._populateGroup(group);
+      this._refreshGroup(group);
+      return this;
+    };
+
+    GroupsManager.prototype.addFeature = function(feature) {};
+
+    GroupsManager.prototype._getGroupId = function(group) {
+      return group.id;
+    };
+
+    GroupsManager.prototype._createGroup = function(group) {
+      var featureGroup;
+      featureGroup = this._createLeafletFeatureGroups(group);
+      return this.__groups[this._getGroupId(group)] = {
+        featureGroup: featureGroup,
+        groupData: group
+      };
+    };
+
+    GroupsManager.prototype._populateGroup = function(group) {};
+
+    GroupsManager.prototype._refreshGroup = function(group) {};
+
+    GroupsManager.prototype.hasGroup = function(group) {
+      return false;
+    };
+
+    GroupsManager.prototype._createLeafletFeatureGroups = function(group) {
+      return L.featureGroup();
+    };
+
+    return GroupsManager;
+
+  })(Meppit.BaseClass);
+
+  window.Meppit.GroupsManager = GroupsManager;
+
   Map = (function(_super) {
     __extends(Map, _super);
 
@@ -377,6 +450,7 @@
       this._ensureLeafletMap();
       this._ensureTileProviders();
       this._ensureGeoJsonManager();
+      this._ensureGroupsManager();
       this.__defineLeafletDefaultImagePath();
       this.selectTileProvider(this.getOption('tileProvider'));
     }
@@ -781,7 +855,8 @@
       onEachFeatureCallback = (function(_this) {
         return function(feature, layer) {
           _this.__saveFeatureLayerRelation(feature, layer);
-          return _this.__addLayerEventListeners(feature, layer);
+          _this.__addLayerEventListeners(feature, layer);
+          return _this.__addLayerToGroups(feature);
         };
       })(this);
       styleCallback = (function(_this) {
@@ -804,6 +879,14 @@
         }
       }
       return this._geoJsonManager != null ? this._geoJsonManager : this._geoJsonManager = new L.GeoJSON([], options).addTo(this.leafletMap);
+    };
+
+    Map.prototype._ensureGroupsManager = function() {
+      var _ref;
+      if (this._groupsManager == null) {
+        this._groupsManager = (_ref = typeof Meppit.GroupsManager === "function" ? new Meppit.GroupsManager(this, this.options) : void 0) != null ? _ref : this.warn('Groups manager have not been loaded');
+      }
+      return this._groupsManager;
     };
 
     Map.prototype._ensureEditorManager = function() {
@@ -951,6 +1034,10 @@
         }
       }
       return L.Icon.Default.imagePath = imagePath;
+    };
+
+    Map.prototype.__addLayerToGroups = function(feature) {
+      return this._groupsManager.addFeature(feature);
     };
 
     return Map;

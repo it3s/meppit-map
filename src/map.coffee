@@ -21,6 +21,7 @@ class Map extends Meppit.BaseClass
     @_ensureLeafletMap()
     @_ensureTileProviders()
     @_ensureGeoJsonManager()
+    @_ensureGroupsManager()
     @__defineLeafletDefaultImagePath()
     @selectTileProvider @getOption('tileProvider')
 
@@ -297,6 +298,7 @@ class Map extends Meppit.BaseClass
     onEachFeatureCallback = (feature, layer) =>
       @__saveFeatureLayerRelation feature, layer
       @__addLayerEventListeners feature, layer
+      @__addLayerToGroups feature
     styleCallback = =>
       # TODO
     options =
@@ -307,6 +309,11 @@ class Map extends Meppit.BaseClass
         unique: (feature) => @_getGeoJSONId feature
       }, options)).addTo @leafletMap if @getOption 'enableGeoJsonTile'
     @_geoJsonManager ?= new L.GeoJSON([], options).addTo @leafletMap
+
+  _ensureGroupsManager: ->
+    @_groupsManager ?= new Meppit.GroupsManager?(this, @options) ?
+        @warn 'Groups manager have not been loaded'
+    @_groupsManager
 
   _ensureEditorManager: ->
     if not @getOption 'enableEditor'
@@ -405,5 +412,8 @@ class Map extends Meppit.BaseClass
         imagePath = (if path then path + '/' else '') + 'images'
         break
     L.Icon.Default.imagePath = imagePath
+
+  __addLayerToGroups: (feature) ->
+    @_groupsManager.addFeature feature
 
 window.Meppit.Map = Map
