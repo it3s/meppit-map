@@ -19,6 +19,7 @@ class Map extends Meppit.BaseClass
     @editing = false
     @buttons = {}
     @_ensureLeafletMap()
+    @_ensureEditorManager()
     @_ensureTileProviders()
     @_ensureGeoJsonManager()
     @_ensureGroupsManager()
@@ -301,9 +302,14 @@ class Map extends Meppit.BaseClass
       @__addLayerToGroups feature
     styleCallback = =>
       # TODO
+    pointToLayerCallback = (feature, latLng) =>
+      L.circleMarker latLng,
+        weight: 5
+        radius: 5
     options =
       style: styleCallback
       onEachFeature: onEachFeatureCallback
+      pointToLayer: pointToLayerCallback
     @__geoJsonTileLayer ?= (new L.TileLayer.GeoJSON(@_getGeoJsonTileURL(), {
         clipTiles: true
         unique: (feature) => @_getGeoJSONId feature

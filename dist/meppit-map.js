@@ -189,6 +189,7 @@
       this.options = options != null ? options : {};
       EditorManager.__super__.constructor.apply(this, arguments);
       this.log('Initializing Editor Manager...');
+      this._applyFixes();
       this._initToolbars();
       this._uneditedLayerProps = {};
     }
@@ -320,7 +321,7 @@
           return this._uneditedLayerProps[id] = {
             latlngs: L.LatLngUtil.cloneLatLngs(layer.getLatLngs())
           };
-        } else if (layer instanceof L.Marker) {
+        } else if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
           return this._uneditedLayerProps[id] = {
             latlng: L.LatLngUtil.cloneLatLng(layer.getLatLng())
           };
@@ -338,10 +339,36 @@
       if (this._uneditedLayerProps.hasOwnProperty(id)) {
         if (layer instanceof L.Polyline || layer instanceof L.Polygon) {
           return layer.setLatLngs(this._uneditedLayerProps[id].latlngs);
-        } else if (layer instanceof L.Marker) {
+        } else if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
           return layer.setLatLng(this._uneditedLayerProps[id].latlng);
         }
       }
+    };
+
+    EditorManager.prototype._applyFixes = function() {
+      L.Edit.CircleMarker = L.Edit.Circle.extend({
+        _resize: function() {}
+      });
+      return L.CircleMarker.addInitHook(function() {
+        if (L.Edit.CircleMarker) {
+          this.editing = new L.Edit.CircleMarker(this);
+          if (this.options.editable) {
+            this.editing.enable();
+          }
+        }
+        this.on('add', function() {
+          var _ref;
+          if ((_ref = this.editing) != null ? _ref.enabled() : void 0) {
+            return this.editing.addHooks();
+          }
+        });
+        return this.on('remove', function() {
+          var _ref;
+          if ((_ref = this.editing) != null ? _ref.enabled() : void 0) {
+            return this.editing.removeHooks();
+          }
+        });
+      });
     };
 
     return EditorManager;
@@ -404,10 +431,12 @@
   Group = (function(_super) {
     __extends(Group, _super);
 
-    function Group(data) {
+    function Group(map, data) {
+      this.map = map;
       this.data = data;
       this._initializeData();
       this.__featureGroup = this._createLeafletFeatureGroup();
+      this.refresh();
     }
 
     Group.prototype.getName = function() {
@@ -422,14 +451,80 @@
       return eval_expr(this.rule, feature);
     };
 
+    Group.prototype.hide = function() {
+      this.visible = false;
+      return this.__featureGroup.eachLayer((function(_this) {
+        return function(layer) {
+          return _this._hideLayer(layer);
+        };
+      })(this));
+    };
+
+    Group.prototype.show = function() {
+      this.visible = true;
+      return this.__featureGroup.eachLayer((function(_this) {
+        return function(layer) {
+          return _this._showLayer(layer);
+        };
+      })(this));
+    };
+
+    Group.prototype.refresh = function() {
+      if (this.visible === true) {
+        return this.show();
+      } else {
+        return this.hide();
+      }
+    };
+
     Group.prototype._initializeData = function() {
+      var _ref, _ref1, _ref2, _ref3, _ref4;
       this.name = this.data.name;
       this.id = this.data.id;
-      return this.rule = this.data.rule;
+      this.strokeColor = (_ref = (_ref1 = this.data.strokeColor) != null ? _ref1 : this.data.stroke_color) != null ? _ref : '#0000ff';
+      this.fillColor = (_ref2 = (_ref3 = this.data.fillColor) != null ? _ref3 : this.data.fill_color) != null ? _ref2 : '#0000ff';
+      this.rule = this.data.rule;
+      return this.visible = (_ref4 = this.data.visible) != null ? _ref4 : true;
     };
 
     Group.prototype._createLeafletFeatureGroup = function() {
-      return L.featureGroup();
+      var featureGroup;
+      featureGroup = L.geoJson();
+      featureGroup.on('layeradd', (function(_this) {
+        return function(evt) {
+          _this._setLayerVisibility(evt.layer);
+          return _this._setLayerStyle(evt.layer);
+        };
+      })(this));
+      return featureGroup;
+    };
+
+    Group.prototype._hideLayer = function(layer) {
+      if (this.map.leafletMap.hasLayer(layer)) {
+        return this.map.leafletMap.removeLayer(layer);
+      }
+    };
+
+    Group.prototype._showLayer = function(layer) {
+      if (!this.map.leafletMap.hasLayer(layer)) {
+        return this.map.leafletMap.addLayer(layer);
+      }
+    };
+
+    Group.prototype._setLayerStyle = function(layer) {
+      return typeof layer.setStyle === "function" ? layer.setStyle({
+        color: this.strokeColor,
+        fillcolor: this.fillColor,
+        weight: 5,
+        opacity: 0.8,
+        fillOpacity: 0.4
+      }) : void 0;
+    };
+
+    Group.prototype._setLayerVisibility = function(layer) {
+      if (!this.visible) {
+        return this._hideLayer(layer);
+      }
     };
 
     return Group;
@@ -467,15 +562,19 @@
       return this;
     };
 
-    GroupsManager.prototype.addGroup = function(group) {
-      if (this.hasGroup(group)) {
+    GroupsManager.prototype.addGroup = function(data) {
+      var group;
+      if (this.hasGroup(data)) {
         return;
       }
+      group = this._createGroup(data);
       this.log("Adding group '" + group.name + "'...");
-      this._createGroup(group);
       this._populateGroup(group);
-      this._refreshGroup(group);
       return this;
+    };
+
+    GroupsManager.prototype.getGroup = function(id) {
+      return this.__groups[id];
     };
 
     GroupsManager.prototype.count = function() {
@@ -484,9 +583,6 @@
 
     GroupsManager.prototype.addFeature = function(feature) {
       var group, layer, _ref;
-      if (this.count() === 0) {
-        return;
-      }
       group = this._getGroupFor(feature);
       this.log("Adding feature " + ((_ref = feature.properties) != null ? _ref.name : void 0) + " to group '" + group.name + "'...");
       layer = this.map._getLeafletLayer(feature);
@@ -510,22 +606,22 @@
       return group.id;
     };
 
-    GroupsManager.prototype._createGroup = function(group) {
+    GroupsManager.prototype._createGroup = function(data) {
       var groupId;
-      groupId = this._getGroupId(group);
+      groupId = this._getGroupId(data);
       this.__groupsIds.push(groupId);
-      return this.__groups[groupId] = new Group(group);
+      return this.__groups[groupId] = new Group(this.map, data);
     };
 
     GroupsManager.prototype._createDefaultGroup = function() {
-      return this.__defaultGroup = new Group({
+      return this.__defaultGroup = new Group(this.map, {
         name: 'Others'
       });
     };
 
-    GroupsManager.prototype._populateGroup = function(group) {};
-
-    GroupsManager.prototype._refreshGroup = function(group) {};
+    GroupsManager.prototype._populateGroup = function(group) {
+      return group.refresh();
+    };
 
     GroupsManager.prototype.hasGroup = function(group) {
       var _ref;
@@ -564,6 +660,7 @@
       this.editing = false;
       this.buttons = {};
       this._ensureLeafletMap();
+      this._ensureEditorManager();
       this._ensureTileProviders();
       this._ensureGeoJsonManager();
       this._ensureGroupsManager();
@@ -964,7 +1061,7 @@
     };
 
     Map.prototype._ensureGeoJsonManager = function() {
-      var onEachFeatureCallback, options, styleCallback;
+      var onEachFeatureCallback, options, pointToLayerCallback, styleCallback;
       if (this.leafletLayers == null) {
         this.leafletLayers = {};
       }
@@ -978,9 +1075,18 @@
       styleCallback = (function(_this) {
         return function() {};
       })(this);
+      pointToLayerCallback = (function(_this) {
+        return function(feature, latLng) {
+          return L.circleMarker(latLng, {
+            weight: 5,
+            radius: 5
+          });
+        };
+      })(this);
       options = {
         style: styleCallback,
-        onEachFeature: onEachFeatureCallback
+        onEachFeature: onEachFeatureCallback,
+        pointToLayer: pointToLayerCallback
       };
       if (this.getOption('enableGeoJsonTile')) {
         if (this.__geoJsonTileLayer == null) {

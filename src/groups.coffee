@@ -34,9 +34,10 @@ eval_expr = (expr, obj) ->
 window.ee = eval_expr
 
 class Group extends Meppit.BaseClass
-  constructor: (@data) ->
+  constructor: (@map, @data) ->
     @_initializeData()
     @__featureGroup = @_createLeafletFeatureGroup()
+    @refresh()
 
   getName: ->
     @data.name
@@ -47,13 +48,53 @@ class Group extends Meppit.BaseClass
   match: (feature) ->
     eval_expr @rule, feature
 
+  hide: ->
+    @visible = false
+    @__featureGroup.eachLayer (layer) =>
+      @_hideLayer layer
+
+  show: ->
+    @visible = true
+    @__featureGroup.eachLayer (layer) =>
+      @_showLayer layer
+
+  refresh: ->
+    if @visible is true then @show() else @hide()
+
   _initializeData: ->
     @name = @data.name
     @id = @data.id
+    @strokeColor = @data.strokeColor ? @data.stroke_color ? '#0000ff'
+    @fillColor = @data.fillColor ? @data.fill_color ? '#0000ff'
     @rule = @data.rule
+    @visible = @data.visible ? true
 
   _createLeafletFeatureGroup: ->
-    L.featureGroup()
+    featureGroup = L.geoJson()
+    featureGroup.on 'layeradd', (evt) =>
+      @_setLayerVisibility evt.layer
+      @_setLayerStyle evt.layer
+    featureGroup
+
+  _hideLayer: (layer) ->
+    if @map.leafletMap.hasLayer(layer)
+      @map.leafletMap.removeLayer(layer)
+
+  _showLayer: (layer) ->
+    if not @map.leafletMap.hasLayer(layer)
+      @map.leafletMap.addLayer(layer)
+
+  _setLayerStyle: (layer) ->
+    layer.setStyle?(
+      color: @strokeColor
+      fillcolor: @fillColor
+      weight: 5
+      opacity: 0.8
+      fillOpacity: 0.4
+    )
+
+  _setLayerVisibility: (layer) ->
+    @_hideLayer(layer) if not @visible
 
 
 class GroupsManager extends Meppit.BaseClass
@@ -73,18 +114,19 @@ class GroupsManager extends Meppit.BaseClass
     @addGroup group for group in groups
     this
 
-  addGroup: (group) ->
-    return if @hasGroup group
+  addGroup: (data) ->
+    return if @hasGroup data
+    group = @_createGroup data
     @log "Adding group '#{group.name}'..."
-    @_createGroup group
     @_populateGroup group
-    @_refreshGroup group
     this
+
+  getGroup: (id) ->
+    @__groups[id]
 
   count: -> @__groupsIds.length
 
   addFeature: (feature) ->
-    return if @count() is 0
     group = @_getGroupFor feature
     @log "Adding feature #{feature.properties?.name} to group '#{group.name}'..."
     layer = @map._getLeafletLayer feature
@@ -100,19 +142,17 @@ class GroupsManager extends Meppit.BaseClass
     # TODO: create an unique identifier if there is no `group.id`
     group.id
 
-  _createGroup: (group) ->
-    groupId = @_getGroupId group
+  _createGroup: (data) ->
+    groupId = @_getGroupId data
     @__groupsIds.push groupId
-    @__groups[groupId] = new Group group
+    @__groups[groupId] = new Group @map, data
 
   _createDefaultGroup: ->
-    @__defaultGroup = new Group name: 'Others'
+    @__defaultGroup = new Group @map, name: 'Others'
 
   _populateGroup: (group) ->
     # TODO
-
-  _refreshGroup: (group) ->
-    # TODO
+    group.refresh()
 
   hasGroup: (group) ->
     @_getGroupId(group) in @__groupsIds
