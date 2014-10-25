@@ -266,43 +266,61 @@ eval_expr = (expr, obj) ->
   else if operator in and_ops
     eval_expr(expr.left, obj) and eval_expr(expr.right, obj)
 
-window.ee = eval_expr
-
 class Group extends Meppit.BaseClass
+  FILLCOLOR: '#0000ff'
+  STROKECOLOR: '#0000ff'
+  FILLOPACITY: 0.4
+  STROKEOPACITY: 0.8
+
   constructor: (@map, @data) ->
     @_initializeData()
-    @__featureGroup = @_createLeafletFeatureGroup()
+    @_featureGroup = @_createLeafletFeatureGroup()
     @refresh()
 
   getName: ->
     @data.name
 
   addLayer: (layer) ->
-    @__featureGroup.addLayer layer
+    @_featureGroup.addLayer layer
+
+  getLayers: ->
+    @_featureGroup.getLayers()
+
+  removeLayer: (layer) ->
+    @_featureGroup.removeLayer layer
 
   match: (feature) ->
+    feature = feature.feature if feature?.feature  # Accept Leaflet Layer
     eval_expr @rule, feature
 
   hide: ->
     @visible = false
-    @__featureGroup.eachLayer (layer) =>
+    @_featureGroup.eachLayer (layer) =>
       @_hideLayer layer
 
   show: ->
     @visible = true
-    @__featureGroup.eachLayer (layer) =>
+    @_featureGroup.eachLayer (layer) =>
       @_showLayer layer
 
   refresh: ->
     if @visible is true then @show() else @hide()
+    @_featureGroup.setStyle @__style
 
   _initializeData: ->
     @name = @data.name
     @id = @data.id
-    @strokeColor = @data.strokeColor ? @data.stroke_color ? '#0000ff'
-    @fillColor = @data.fillColor ? @data.fill_color ? '#0000ff'
+    @position = @data.position ? 999
+    @strokeColor = @data.strokeColor ? @data.stroke_color ? @STROKECOLOR
+    @fillColor = @data.fillColor ? @data.fill_color ? @FILLCOLOR
     @rule = @data.rule
     @visible = @data.visible ? true
+    @__style =
+      color: @strokeColor
+      fillcolor: @fillColor
+      weight: 5
+      opacity: @STROKEOPACITY
+      fillOpacity: @FILLOPACITY
 
   _createLeafletFeatureGroup: ->
     featureGroup = L.geoJson()
@@ -320,13 +338,7 @@ class Group extends Meppit.BaseClass
       @map.leafletMap.addLayer(layer)
 
   _setLayerStyle: (layer) ->
-    layer.setStyle?(
-      color: @strokeColor
-      fillcolor: @fillColor
-      weight: 5
-      opacity: 0.8
-      fillOpacity: 0.4
-    )
+    layer.setStyle? @__style
 
   _setLayerVisibility: (layer) ->
     @_hideLayer(layer) if not @visible
@@ -357,19 +369,39 @@ class GroupsManager extends Meppit.BaseClass
     this
 
   getGroup: (id) ->
-    @__groups[id]
+    if id instanceof Group
+      id
+    else if Meppit.isNumber id
+      @__groups[id]
+    else if id?.id?
+      @getGroup id.id
+
+  show: (id) ->
+    @getGroup(id)?.show()
+
+  hide: (id) ->
+    @getGroup(id)?.hide()
 
   count: -> @__groupsIds.length
 
   addFeature: (feature) ->
     group = @_getGroupFor feature
-    @log "Adding feature #{feature.properties?.name} to group '#{group.name}'..."
+    @log "Adding feature '#{feature.properties?.name}' to group '#{group.name}'..."
     layer = @map._getLeafletLayer feature
     group.addLayer layer
 
+  addLayer: (layer) ->
+    group = @_getGroupFor layer.feature
+    @log "Adding feature '#{layer.feature.properties?.name}' to group '#{group.name}'..."
+    group.addLayer layer
+
+  getGroups: ->
+    groups = (@__groups[groupId] for groupId in @__groupsIds)
+    groups.push @__defaultGroup
+    groups
+
   _getGroupFor: (feature) ->
-    for groupId in @__groupsIds
-      group = @__groups[groupId]
+    for group in @getGroups()
       return group if group.match feature
     return @__defaultGroup
 
@@ -386,8 +418,11 @@ class GroupsManager extends Meppit.BaseClass
     @__defaultGroup = new Group @map, name: 'Others'
 
   _populateGroup: (group) ->
-    # TODO
-    group.refresh()
+    for g in @getGroups() when g.position > group.position
+      for l in g.getLayers()
+        if group.match l
+          g.removeLayer l
+          group.addLayer l
 
   hasGroup: (group) ->
     @_getGroupId(group) in @__groupsIds
@@ -586,6 +621,18 @@ class Map extends Meppit.BaseClass
     @leafletMap.zoomOut.apply @leafletMap, arguments
     this
 
+  showLayer: (layer) ->
+    @_groupsManager.show layer
+    this
+
+  hideLayer: (layer) ->
+    @_groupsManager.hide layer
+    this
+
+  addLayer: (layer) ->
+    @_groupsManager.addGroup layer
+    this
+
   getURL: (feature) ->
     url = feature?.properties?[@getOption 'urlPropertyName']
     return url if url?
@@ -695,13 +742,12 @@ class Map extends Meppit.BaseClass
     onEachFeatureCallback = (feature, layer) =>
       @__saveFeatureLayerRelation feature, layer
       @__addLayerEventListeners feature, layer
-      @__addLayerToGroups feature
     styleCallback = =>
       # TODO
     pointToLayerCallback = (feature, latLng) =>
       L.circleMarker latLng,
         weight: 5
-        radius: 5
+        radius: 7
     options =
       style: styleCallback
       onEachFeature: onEachFeatureCallback
@@ -711,6 +757,8 @@ class Map extends Meppit.BaseClass
         unique: (feature) => @_getGeoJSONId feature
       }, options)).addTo @leafletMap if @getOption 'enableGeoJsonTile'
     @_geoJsonManager ?= new L.GeoJSON([], options).addTo @leafletMap
+    @_geoJsonManager.on 'layeradd', (evt) =>
+      @__addLayerToGroups evt.layer
 
   _ensureGroupsManager: ->
     @_groupsManager ?= new Meppit.GroupsManager?(this, @options) ?
@@ -815,8 +863,8 @@ class Map extends Meppit.BaseClass
         break
     L.Icon.Default.imagePath = imagePath
 
-  __addLayerToGroups: (feature) ->
-    @_groupsManager.addFeature feature
+  __addLayerToGroups: (layer) ->
+    @_groupsManager.addLayer layer
 
 window.Meppit.Map = Map
 

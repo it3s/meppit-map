@@ -426,16 +426,22 @@
     }
   };
 
-  window.ee = eval_expr;
-
   Group = (function(_super) {
     __extends(Group, _super);
+
+    Group.prototype.FILLCOLOR = '#0000ff';
+
+    Group.prototype.STROKECOLOR = '#0000ff';
+
+    Group.prototype.FILLOPACITY = 0.4;
+
+    Group.prototype.STROKEOPACITY = 0.8;
 
     function Group(map, data) {
       this.map = map;
       this.data = data;
       this._initializeData();
-      this.__featureGroup = this._createLeafletFeatureGroup();
+      this._featureGroup = this._createLeafletFeatureGroup();
       this.refresh();
     }
 
@@ -444,16 +450,27 @@
     };
 
     Group.prototype.addLayer = function(layer) {
-      return this.__featureGroup.addLayer(layer);
+      return this._featureGroup.addLayer(layer);
+    };
+
+    Group.prototype.getLayers = function() {
+      return this._featureGroup.getLayers();
+    };
+
+    Group.prototype.removeLayer = function(layer) {
+      return this._featureGroup.removeLayer(layer);
     };
 
     Group.prototype.match = function(feature) {
+      if (feature != null ? feature.feature : void 0) {
+        feature = feature.feature;
+      }
       return eval_expr(this.rule, feature);
     };
 
     Group.prototype.hide = function() {
       this.visible = false;
-      return this.__featureGroup.eachLayer((function(_this) {
+      return this._featureGroup.eachLayer((function(_this) {
         return function(layer) {
           return _this._hideLayer(layer);
         };
@@ -462,7 +479,7 @@
 
     Group.prototype.show = function() {
       this.visible = true;
-      return this.__featureGroup.eachLayer((function(_this) {
+      return this._featureGroup.eachLayer((function(_this) {
         return function(layer) {
           return _this._showLayer(layer);
         };
@@ -471,20 +488,29 @@
 
     Group.prototype.refresh = function() {
       if (this.visible === true) {
-        return this.show();
+        this.show();
       } else {
-        return this.hide();
+        this.hide();
       }
+      return this._featureGroup.setStyle(this.__style);
     };
 
     Group.prototype._initializeData = function() {
-      var _ref, _ref1, _ref2, _ref3, _ref4;
+      var _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
       this.name = this.data.name;
       this.id = this.data.id;
-      this.strokeColor = (_ref = (_ref1 = this.data.strokeColor) != null ? _ref1 : this.data.stroke_color) != null ? _ref : '#0000ff';
-      this.fillColor = (_ref2 = (_ref3 = this.data.fillColor) != null ? _ref3 : this.data.fill_color) != null ? _ref2 : '#0000ff';
+      this.position = (_ref = this.data.position) != null ? _ref : 999;
+      this.strokeColor = (_ref1 = (_ref2 = this.data.strokeColor) != null ? _ref2 : this.data.stroke_color) != null ? _ref1 : this.STROKECOLOR;
+      this.fillColor = (_ref3 = (_ref4 = this.data.fillColor) != null ? _ref4 : this.data.fill_color) != null ? _ref3 : this.FILLCOLOR;
       this.rule = this.data.rule;
-      return this.visible = (_ref4 = this.data.visible) != null ? _ref4 : true;
+      this.visible = (_ref5 = this.data.visible) != null ? _ref5 : true;
+      return this.__style = {
+        color: this.strokeColor,
+        fillcolor: this.fillColor,
+        weight: 5,
+        opacity: this.STROKEOPACITY,
+        fillOpacity: this.FILLOPACITY
+      };
     };
 
     Group.prototype._createLeafletFeatureGroup = function() {
@@ -512,13 +538,7 @@
     };
 
     Group.prototype._setLayerStyle = function(layer) {
-      return typeof layer.setStyle === "function" ? layer.setStyle({
-        color: this.strokeColor,
-        fillcolor: this.fillColor,
-        weight: 5,
-        opacity: 0.8,
-        fillOpacity: 0.4
-      }) : void 0;
+      return typeof layer.setStyle === "function" ? layer.setStyle(this.__style) : void 0;
     };
 
     Group.prototype._setLayerVisibility = function(layer) {
@@ -574,7 +594,23 @@
     };
 
     GroupsManager.prototype.getGroup = function(id) {
-      return this.__groups[id];
+      if (id instanceof Group) {
+        return id;
+      } else if (Meppit.isNumber(id)) {
+        return this.__groups[id];
+      } else if ((id != null ? id.id : void 0) != null) {
+        return this.getGroup(id.id);
+      }
+    };
+
+    GroupsManager.prototype.show = function(id) {
+      var _ref;
+      return (_ref = this.getGroup(id)) != null ? _ref.show() : void 0;
+    };
+
+    GroupsManager.prototype.hide = function(id) {
+      var _ref;
+      return (_ref = this.getGroup(id)) != null ? _ref.hide() : void 0;
     };
 
     GroupsManager.prototype.count = function() {
@@ -584,17 +620,39 @@
     GroupsManager.prototype.addFeature = function(feature) {
       var group, layer, _ref;
       group = this._getGroupFor(feature);
-      this.log("Adding feature " + ((_ref = feature.properties) != null ? _ref.name : void 0) + " to group '" + group.name + "'...");
+      this.log("Adding feature '" + ((_ref = feature.properties) != null ? _ref.name : void 0) + "' to group '" + group.name + "'...");
       layer = this.map._getLeafletLayer(feature);
       return group.addLayer(layer);
     };
 
+    GroupsManager.prototype.addLayer = function(layer) {
+      var group, _ref;
+      group = this._getGroupFor(layer.feature);
+      this.log("Adding feature '" + ((_ref = layer.feature.properties) != null ? _ref.name : void 0) + "' to group '" + group.name + "'...");
+      return group.addLayer(layer);
+    };
+
+    GroupsManager.prototype.getGroups = function() {
+      var groupId, groups;
+      groups = (function() {
+        var _i, _len, _ref, _results;
+        _ref = this.__groupsIds;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          groupId = _ref[_i];
+          _results.push(this.__groups[groupId]);
+        }
+        return _results;
+      }).call(this);
+      groups.push(this.__defaultGroup);
+      return groups;
+    };
+
     GroupsManager.prototype._getGroupFor = function(feature) {
-      var group, groupId, _i, _len, _ref;
-      _ref = this.__groupsIds;
+      var group, _i, _len, _ref;
+      _ref = this.getGroups();
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        groupId = _ref[_i];
-        group = this.__groups[groupId];
+        group = _ref[_i];
         if (group.match(feature)) {
           return group;
         }
@@ -620,7 +678,30 @@
     };
 
     GroupsManager.prototype._populateGroup = function(group) {
-      return group.refresh();
+      var g, l, _i, _len, _ref, _results;
+      _ref = this.getGroups();
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        g = _ref[_i];
+        if (g.position > group.position) {
+          _results.push((function() {
+            var _j, _len1, _ref1, _results1;
+            _ref1 = g.getLayers();
+            _results1 = [];
+            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+              l = _ref1[_j];
+              if (group.match(l)) {
+                g.removeLayer(l);
+                _results1.push(group.addLayer(l));
+              } else {
+                _results1.push(void 0);
+              }
+            }
+            return _results1;
+          })());
+        }
+      }
+      return _results;
     };
 
     GroupsManager.prototype.hasGroup = function(group) {
@@ -917,6 +998,21 @@
       return this;
     };
 
+    Map.prototype.showLayer = function(layer) {
+      this._groupsManager.show(layer);
+      return this;
+    };
+
+    Map.prototype.hideLayer = function(layer) {
+      this._groupsManager.hide(layer);
+      return this;
+    };
+
+    Map.prototype.addLayer = function(layer) {
+      this._groupsManager.addGroup(layer);
+      return this;
+    };
+
     Map.prototype.getURL = function(feature) {
       var url, _ref;
       url = feature != null ? (_ref = feature.properties) != null ? _ref[this.getOption('urlPropertyName')] : void 0 : void 0;
@@ -1068,8 +1164,7 @@
       onEachFeatureCallback = (function(_this) {
         return function(feature, layer) {
           _this.__saveFeatureLayerRelation(feature, layer);
-          _this.__addLayerEventListeners(feature, layer);
-          return _this.__addLayerToGroups(feature);
+          return _this.__addLayerEventListeners(feature, layer);
         };
       })(this);
       styleCallback = (function(_this) {
@@ -1079,7 +1174,7 @@
         return function(feature, latLng) {
           return L.circleMarker(latLng, {
             weight: 5,
-            radius: 5
+            radius: 7
           });
         };
       })(this);
@@ -1100,7 +1195,14 @@
           }, options)).addTo(this.leafletMap);
         }
       }
-      return this._geoJsonManager != null ? this._geoJsonManager : this._geoJsonManager = new L.GeoJSON([], options).addTo(this.leafletMap);
+      if (this._geoJsonManager == null) {
+        this._geoJsonManager = new L.GeoJSON([], options).addTo(this.leafletMap);
+      }
+      return this._geoJsonManager.on('layeradd', (function(_this) {
+        return function(evt) {
+          return _this.__addLayerToGroups(evt.layer);
+        };
+      })(this));
     };
 
     Map.prototype._ensureGroupsManager = function() {
@@ -1258,8 +1360,8 @@
       return L.Icon.Default.imagePath = imagePath;
     };
 
-    Map.prototype.__addLayerToGroups = function(feature) {
-      return this._groupsManager.addFeature(feature);
+    Map.prototype.__addLayerToGroups = function(layer) {
+      return this._groupsManager.addLayer(layer);
     };
 
     return Map;

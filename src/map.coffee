@@ -190,6 +190,18 @@ class Map extends Meppit.BaseClass
     @leafletMap.zoomOut.apply @leafletMap, arguments
     this
 
+  showLayer: (layer) ->
+    @_groupsManager.show layer
+    this
+
+  hideLayer: (layer) ->
+    @_groupsManager.hide layer
+    this
+
+  addLayer: (layer) ->
+    @_groupsManager.addGroup layer
+    this
+
   getURL: (feature) ->
     url = feature?.properties?[@getOption 'urlPropertyName']
     return url if url?
@@ -299,13 +311,12 @@ class Map extends Meppit.BaseClass
     onEachFeatureCallback = (feature, layer) =>
       @__saveFeatureLayerRelation feature, layer
       @__addLayerEventListeners feature, layer
-      @__addLayerToGroups feature
     styleCallback = =>
       # TODO
     pointToLayerCallback = (feature, latLng) =>
       L.circleMarker latLng,
         weight: 5
-        radius: 5
+        radius: 7
     options =
       style: styleCallback
       onEachFeature: onEachFeatureCallback
@@ -315,6 +326,8 @@ class Map extends Meppit.BaseClass
         unique: (feature) => @_getGeoJSONId feature
       }, options)).addTo @leafletMap if @getOption 'enableGeoJsonTile'
     @_geoJsonManager ?= new L.GeoJSON([], options).addTo @leafletMap
+    @_geoJsonManager.on 'layeradd', (evt) =>
+      @__addLayerToGroups evt.layer
 
   _ensureGroupsManager: ->
     @_groupsManager ?= new Meppit.GroupsManager?(this, @options) ?
@@ -419,7 +432,7 @@ class Map extends Meppit.BaseClass
         break
     L.Icon.Default.imagePath = imagePath
 
-  __addLayerToGroups: (feature) ->
-    @_groupsManager.addFeature feature
+  __addLayerToGroups: (layer) ->
+    @_groupsManager.addLayer layer
 
 window.Meppit.Map = Map
