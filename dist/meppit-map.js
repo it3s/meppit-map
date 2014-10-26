@@ -392,22 +392,13 @@
   and_ops = ['and'];
 
   eval_expr = function(expr, obj) {
-    var objValue, operator, res, v, _i, _len, _ref, _ref1, _ref2;
+    var objValue, operator, res, v, _i, _len, _ref, _ref1;
     if ((expr == null) || (expr.operator == null)) {
       return true;
     }
-    if (obj == null) {
-      return false;
-    }
     operator = expr.operator;
     objValue = (_ref = obj[expr.property]) != null ? _ref : obj.properties[expr.property];
-    if (__indexOf.call(equal_ops, operator) >= 0) {
-      return objValue === expr.value;
-    } else if (__indexOf.call(not_equal_ops, operator) >= 0) {
-      return !objValue === expr.value;
-    } else if (__indexOf.call(in_ops, operator) >= 0) {
-      return (objValue != null) && __indexOf.call(expr.value, objValue) >= 0;
-    } else if (__indexOf.call(contains_ops, operator) >= 0 && Object.prototype.toString.call(expr.value) === '[object Array]') {
+    if (__indexOf.call(contains_ops, operator) >= 0 && Object.prototype.toString.call(expr.value) === '[object Array]') {
       res = true;
       _ref1 = expr.value;
       for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
@@ -415,19 +406,13 @@
         res = res && (objValue != null) && __indexOf.call(objValue, v) >= 0;
       }
       return res;
-    } else if (__indexOf.call(contains_ops, operator) >= 0) {
-      return objValue && (_ref2 = expr.value, __indexOf.call(objValue, _ref2) >= 0);
-    } else if (__indexOf.call(not_ops, operator) >= 0) {
-      return !eval_expr(expr.child, obj);
-    } else if (__indexOf.call(or_ops, operator) >= 0) {
-      return eval_expr(expr.left, obj) || eval_expr(expr.right, obj);
-    } else if (__indexOf.call(and_ops, operator) >= 0) {
-      return eval_expr(expr.left, obj) && eval_expr(expr.right, obj);
     }
   };
 
   Group = (function(_super) {
     __extends(Group, _super);
+
+    Group.prototype.POSITION = 999;
 
     Group.prototype.FILLCOLOR = '#0000ff';
 
@@ -440,33 +425,11 @@
     function Group(map, data) {
       this.map = map;
       this.data = data;
+      Group.__super__.constructor.apply(this, arguments);
       this._initializeData();
       this._featureGroup = this._createLeafletFeatureGroup();
       this.refresh();
     }
-
-    Group.prototype.getName = function() {
-      return this.data.name;
-    };
-
-    Group.prototype.addLayer = function(layer) {
-      return this._featureGroup.addLayer(layer);
-    };
-
-    Group.prototype.getLayers = function() {
-      return this._featureGroup.getLayers();
-    };
-
-    Group.prototype.removeLayer = function(layer) {
-      return this._featureGroup.removeLayer(layer);
-    };
-
-    Group.prototype.match = function(feature) {
-      if (feature != null ? feature.feature : void 0) {
-        feature = feature.feature;
-      }
-      return eval_expr(this.rule, feature);
-    };
 
     Group.prototype.hide = function() {
       this.visible = false;
@@ -495,11 +458,43 @@
       return this._featureGroup.setStyle(this.__style);
     };
 
+    Group.prototype.match = function(feature) {
+      if (feature != null ? feature.feature : void 0) {
+        feature = feature.feature;
+      }
+      return eval_expr(this.rule, feature);
+    };
+
+    Group.prototype.addLayer = function(layer) {
+      if (this.hasLayer(layer)) {
+        return;
+      }
+      this._featureGroup.addLayer(layer);
+      this._setLayerVisibility(layer);
+      return this._setLayerStyle(layer);
+    };
+
+    Group.prototype.hasLayer = function(layer) {
+      return this._featureGroup.hasLayer(layer);
+    };
+
+    Group.prototype.getLayers = function() {
+      return this._featureGroup.getLayers();
+    };
+
+    Group.prototype.count = function() {
+      return this.getLayers().length;
+    };
+
+    Group.prototype.removeLayer = function(layer) {
+      return this._featureGroup.removeLayer(layer);
+    };
+
     Group.prototype._initializeData = function() {
       var _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
       this.name = this.data.name;
       this.id = this.data.id;
-      this.position = (_ref = this.data.position) != null ? _ref : 999;
+      this.position = (_ref = this.data.position) != null ? _ref : this.POSITION;
       this.strokeColor = (_ref1 = (_ref2 = this.data.strokeColor) != null ? _ref2 : this.data.stroke_color) != null ? _ref1 : this.STROKECOLOR;
       this.fillColor = (_ref3 = (_ref4 = this.data.fillColor) != null ? _ref4 : this.data.fill_color) != null ? _ref3 : this.FILLCOLOR;
       this.rule = this.data.rule;
@@ -554,10 +549,6 @@
   GroupsManager = (function(_super) {
     __extends(GroupsManager, _super);
 
-    GroupsManager.prototype.defaultOptions = {
-      foo: 'bar'
-    };
-
     function GroupsManager(map, options) {
       var _ref;
       this.map = map;
@@ -593,6 +584,31 @@
       return this;
     };
 
+    GroupsManager.prototype.removeGroup = function(data) {
+      var group, groupId, groupsIds, id;
+      group = this.getGroup(data);
+      if (group == null) {
+        return;
+      }
+      this.log("Removing group '" + group.name + "'...");
+      groupId = this._getGroupId(group);
+      groupsIds = (function() {
+        var _i, _len, _ref, _results;
+        _ref = this.__groupsIds;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          id = _ref[_i];
+          if (id !== groupId) {
+            _results.push(id);
+          }
+        }
+        return _results;
+      }).call(this);
+      this.__groupsIds = groupsIds;
+      this.__groups[groupId] = void 0;
+      return this;
+    };
+
     GroupsManager.prototype.getGroup = function(id) {
       if (id instanceof Group) {
         return id;
@@ -601,6 +617,27 @@
       } else if ((id != null ? id.id : void 0) != null) {
         return this.getGroup(id.id);
       }
+    };
+
+    GroupsManager.prototype.getGroups = function() {
+      var groupId, groups;
+      groups = (function() {
+        var _i, _len, _ref, _results;
+        _ref = this.__groupsIds;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          groupId = _ref[_i];
+          _results.push(this.__groups[groupId]);
+        }
+        return _results;
+      }).call(this);
+      groups.push(this.__defaultGroup);
+      return groups;
+    };
+
+    GroupsManager.prototype.hasGroup = function(group) {
+      var _ref;
+      return _ref = this._getGroupId(group), __indexOf.call(this.__groupsIds, _ref) >= 0;
     };
 
     GroupsManager.prototype.show = function(id) {
@@ -630,22 +667,6 @@
       group = this._getGroupFor(layer.feature);
       this.log("Adding feature '" + ((_ref = layer.feature.properties) != null ? _ref.name : void 0) + "' to group '" + group.name + "'...");
       return group.addLayer(layer);
-    };
-
-    GroupsManager.prototype.getGroups = function() {
-      var groupId, groups;
-      groups = (function() {
-        var _i, _len, _ref, _results;
-        _ref = this.__groupsIds;
-        _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          groupId = _ref[_i];
-          _results.push(this.__groups[groupId]);
-        }
-        return _results;
-      }).call(this);
-      groups.push(this.__defaultGroup);
-      return groups;
     };
 
     GroupsManager.prototype._getGroupFor = function(feature) {
@@ -704,14 +725,11 @@
       return _results;
     };
 
-    GroupsManager.prototype.hasGroup = function(group) {
-      var _ref;
-      return _ref = this._getGroupId(group), __indexOf.call(this.__groupsIds, _ref) >= 0;
-    };
-
     return GroupsManager;
 
   })(Meppit.BaseClass);
+
+  window.Meppit.Group = Group;
 
   window.Meppit.GroupsManager = GroupsManager;
 

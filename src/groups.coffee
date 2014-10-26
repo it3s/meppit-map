@@ -8,55 +8,42 @@ and_ops = ['and']
 
 eval_expr = (expr, obj) ->
   return true if not expr? or not expr.operator?
-  return false if not obj?
+  #return false if not obj?
   operator = expr.operator
   objValue = obj[expr.property] ? obj.properties[expr.property]
-  if operator in equal_ops
-    objValue is expr.value
-  else if operator in not_equal_ops
-    not objValue is expr.value
-  else if operator in in_ops
-    objValue? and objValue in expr.value
-  else if operator in contains_ops and Object.prototype.toString.call(expr.value) is '[object Array]'
+  #if operator in equal_ops
+  #  objValue is expr.value
+  #else if operator in not_equal_ops
+  #  not objValue is expr.value
+  #else if operator in in_ops
+  #  objValue? and objValue in expr.value
+  #else ...
+  if operator in contains_ops and Object.prototype.toString.call(expr.value) is '[object Array]'
     res = true
     for v in expr.value
       res = res and objValue? and v in objValue
     res
-  else if operator in contains_ops
-    objValue and expr.value in objValue
-  else if operator in not_ops
-    not eval_expr(expr.child, obj)
-  else if operator in or_ops
-    eval_expr(expr.left, obj) or eval_expr(expr.right, obj)
-  else if operator in and_ops
-    eval_expr(expr.left, obj) and eval_expr(expr.right, obj)
+  #else if operator in contains_ops
+  #  objValue and expr.value in objValue
+  #else if operator in not_ops
+  #  not eval_expr(expr.child, obj)
+  #else if operator in or_ops
+  #  eval_expr(expr.left, obj) or eval_expr(expr.right, obj)
+  #else if operator in and_ops
+  #  eval_expr(expr.left, obj) and eval_expr(expr.right, obj)
 
 class Group extends Meppit.BaseClass
+  POSITION: 999
   FILLCOLOR: '#0000ff'
   STROKECOLOR: '#0000ff'
   FILLOPACITY: 0.4
   STROKEOPACITY: 0.8
 
   constructor: (@map, @data) ->
+    super
     @_initializeData()
     @_featureGroup = @_createLeafletFeatureGroup()
     @refresh()
-
-  getName: ->
-    @data.name
-
-  addLayer: (layer) ->
-    @_featureGroup.addLayer layer
-
-  getLayers: ->
-    @_featureGroup.getLayers()
-
-  removeLayer: (layer) ->
-    @_featureGroup.removeLayer layer
-
-  match: (feature) ->
-    feature = feature.feature if feature?.feature  # Accept Leaflet Layer
-    eval_expr @rule, feature
 
   hide: ->
     @visible = false
@@ -72,10 +59,32 @@ class Group extends Meppit.BaseClass
     if @visible is true then @show() else @hide()
     @_featureGroup.setStyle @__style
 
+  match: (feature) ->
+    feature = feature.feature if feature?.feature  # Accept Leaflet Layer
+    eval_expr @rule, feature
+
+  addLayer: (layer) ->
+    return if @hasLayer layer
+    @_featureGroup.addLayer layer
+    @_setLayerVisibility layer
+    @_setLayerStyle layer
+
+  hasLayer: (layer) ->
+    @_featureGroup.hasLayer layer
+
+  getLayers: ->
+    @_featureGroup.getLayers()
+
+  count: ->
+    @getLayers().length
+
+  removeLayer: (layer) ->
+    @_featureGroup.removeLayer layer
+
   _initializeData: ->
     @name = @data.name
     @id = @data.id
-    @position = @data.position ? 999
+    @position = @data.position ? @POSITION
     @strokeColor = @data.strokeColor ? @data.stroke_color ? @STROKECOLOR
     @fillColor = @data.fillColor ? @data.fill_color ? @FILLCOLOR
     @rule = @data.rule
@@ -110,9 +119,6 @@ class Group extends Meppit.BaseClass
 
 
 class GroupsManager extends Meppit.BaseClass
-  defaultOptions:
-    foo: 'bar'
-
   constructor: (@map, @options = {}) ->
     super
     @log 'Initializing Groups Manager...'
@@ -133,6 +139,16 @@ class GroupsManager extends Meppit.BaseClass
     @_populateGroup group
     this
 
+  removeGroup: (data) ->
+    group = @getGroup data
+    return if not group?
+    @log "Removing group '#{group.name}'..."
+    groupId = @_getGroupId(group)
+    groupsIds = (id for id in @__groupsIds when id isnt groupId)
+    @__groupsIds = groupsIds
+    @__groups[groupId] = undefined
+    this
+
   getGroup: (id) ->
     if id instanceof Group
       id
@@ -140,6 +156,14 @@ class GroupsManager extends Meppit.BaseClass
       @__groups[id]
     else if id?.id?
       @getGroup id.id
+
+  getGroups: ->
+    groups = (@__groups[groupId] for groupId in @__groupsIds)
+    groups.push @__defaultGroup
+    groups
+
+  hasGroup: (group) ->
+    @_getGroupId(group) in @__groupsIds
 
   show: (id) ->
     @getGroup(id)?.show()
@@ -159,11 +183,6 @@ class GroupsManager extends Meppit.BaseClass
     group = @_getGroupFor layer.feature
     @log "Adding feature '#{layer.feature.properties?.name}' to group '#{group.name}'..."
     group.addLayer layer
-
-  getGroups: ->
-    groups = (@__groups[groupId] for groupId in @__groupsIds)
-    groups.push @__defaultGroup
-    groups
 
   _getGroupFor: (feature) ->
     for group in @getGroups()
@@ -189,7 +208,5 @@ class GroupsManager extends Meppit.BaseClass
           g.removeLayer l
           group.addLayer l
 
-  hasGroup: (group) ->
-    @_getGroupId(group) in @__groupsIds
-
+window.Meppit.Group = Group
 window.Meppit.GroupsManager = GroupsManager
