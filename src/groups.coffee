@@ -39,6 +39,7 @@ class Group extends Meppit.BaseClass
   STROKECOLOR: '#0000ff'
   FILLOPACITY: 0.4
   STROKEOPACITY: 0.8
+  WEIGHT: 3
 
   constructor: (@map, @data) ->
     super
@@ -98,7 +99,7 @@ class Group extends Meppit.BaseClass
     @__style =
       color: @strokeColor
       fillcolor: @fillColor
-      weight: 5
+      weight: @WEIGHT
       opacity: @STROKEOPACITY
       fillOpacity: @FILLOPACITY
     this

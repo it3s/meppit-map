@@ -422,6 +422,8 @@
 
     Group.prototype.STROKEOPACITY = 0.8;
 
+    Group.prototype.WEIGHT = 3;
+
     function Group(map, data) {
       this.map = map;
       this.data = data;
@@ -507,7 +509,7 @@
       this.__style = {
         color: this.strokeColor,
         fillcolor: this.fillColor,
-        weight: 5,
+        weight: this.WEIGHT,
         opacity: this.STROKEOPACITY,
         fillOpacity: this.FILLOPACITY
       };
