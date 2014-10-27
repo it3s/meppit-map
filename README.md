@@ -71,6 +71,7 @@ layers | `LayerOption[]` | undefined | List of layers used to group features
  * `addLayer( <LayerOption> layer )` returns `this`
  * `showLayer( <Number or LayerOption> id )` returns `this`
  * `hideLayer( <Number or LayerOption> id )` returns `this`
+ * `getLayers()` returns `Group[]`
  * `destroy()` returns `undefined`
 
 
