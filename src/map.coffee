@@ -191,16 +191,19 @@ class Map extends Meppit.BaseClass
     this
 
   showLayer: (layer) ->
-    @_groupsManager.show layer
+    @_groupsManager.show.apply @_groupsManager, arguments
     this
 
   hideLayer: (layer) ->
-    @_groupsManager.hide layer
+    @_groupsManager.hide.apply @_groupsManager, arguments
     this
 
   addLayer: (layer) ->
-    @_groupsManager.addGroup layer
+    @_groupsManager.addGroup.apply @_groupsManager, arguments
     this
+
+  getLayers: ->
+    @_groupsManager.getGroups.apply @_groupsManager, arguments
 
   getURL: (feature) ->
     url = feature?.properties?[@getOption 'urlPropertyName']

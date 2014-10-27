@@ -6,6 +6,7 @@ not_ops = ['!', 'not']
 or_ops = ['or']
 and_ops = ['and']
 
+# Unused possibilities are temporarily commented
 eval_expr = (expr, obj) ->
   return true if not expr? or not expr.operator?
   #return false if not obj?
@@ -49,15 +50,18 @@ class Group extends Meppit.BaseClass
     @visible = false
     @_featureGroup.eachLayer (layer) =>
       @_hideLayer layer
+    this
 
   show: ->
     @visible = true
     @_featureGroup.eachLayer (layer) =>
       @_showLayer layer
+    this
 
   refresh: ->
     if @visible is true then @show() else @hide()
     @_featureGroup.setStyle @__style
+    this
 
   match: (feature) ->
     feature = feature.feature if feature?.feature  # Accept Leaflet Layer
@@ -68,6 +72,7 @@ class Group extends Meppit.BaseClass
     @_featureGroup.addLayer layer
     @_setLayerVisibility layer
     @_setLayerStyle layer
+    this
 
   hasLayer: (layer) ->
     @_featureGroup.hasLayer layer
@@ -80,6 +85,7 @@ class Group extends Meppit.BaseClass
 
   removeLayer: (layer) ->
     @_featureGroup.removeLayer layer
+    this
 
   _initializeData: ->
     @name = @data.name
@@ -95,6 +101,7 @@ class Group extends Meppit.BaseClass
       weight: 5
       opacity: @STROKEOPACITY
       fillOpacity: @FILLOPACITY
+    this
 
   _createLeafletFeatureGroup: ->
     featureGroup = L.geoJson()
@@ -106,16 +113,20 @@ class Group extends Meppit.BaseClass
   _hideLayer: (layer) ->
     if @map.leafletMap.hasLayer(layer)
       @map.leafletMap.removeLayer(layer)
+    this
 
   _showLayer: (layer) ->
     if not @map.leafletMap.hasLayer(layer)
       @map.leafletMap.addLayer(layer)
+    this
 
   _setLayerStyle: (layer) ->
     layer.setStyle? @__style
+    this
 
   _setLayerVisibility: (layer) ->
     @_hideLayer(layer) if not @visible
+    this
 
 
 class GroupsManager extends Meppit.BaseClass
@@ -167,9 +178,11 @@ class GroupsManager extends Meppit.BaseClass
 
   show: (id) ->
     @getGroup(id)?.show()
+    this
 
   hide: (id) ->
     @getGroup(id)?.hide()
+    this
 
   count: -> @__groupsIds.length
 
@@ -178,11 +191,13 @@ class GroupsManager extends Meppit.BaseClass
     @log "Adding feature '#{feature.properties?.name}' to group '#{group.name}'..."
     layer = @map._getLeafletLayer feature
     group.addLayer layer
+    this
 
   addLayer: (layer) ->
     group = @_getGroupFor layer.feature
     @log "Adding feature '#{layer.feature.properties?.name}' to group '#{group.name}'..."
     group.addLayer layer
+    this
 
   _getGroupFor: (feature) ->
     for group in @getGroups()

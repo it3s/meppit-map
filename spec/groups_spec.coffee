@@ -14,7 +14,7 @@ define ['../dist/meppit-map', '../lib/leaflet'],
       @map.leafletMap.hasLayer.withArgs(@layerB).returns(false)
 
     describe 'Initialization', ->
-      it 'should initialize data values', ->
+      it 'sets data values', ->
         group = new Meppit.Group null,
           name: 'Name'
           id: 42
@@ -33,7 +33,7 @@ define ['../dist/meppit-map', '../lib/leaflet'],
         expect(group.visible).to.be.false
         expect(group.notUsed).to.be.undefined
 
-      it 'should initialize default values if some values was not passed', ->
+      it 'sets default values if some values was not passed', ->
         group = new Meppit.Group null,
           name: 'Name'
           id: 42
@@ -43,7 +43,7 @@ define ['../dist/meppit-map', '../lib/leaflet'],
         expect(group.fillColor).to.be.eq group.FILLCOLOR
         expect(group.visible).to.be.true
 
-      it 'should respect the visibility from options', ->
+      it 'respects the visibility from options', ->
         group = new Meppit.Group null, visible: false
         expect(group.visible).to.be.false
         group = new Meppit.Group null, visible: true
@@ -51,45 +51,43 @@ define ['../dist/meppit-map', '../lib/leaflet'],
 
     describe 'visibility', ->
       describe '#hide', ->
-        it 'should hide all layers added to group', ->
+        it 'hides all layers added to group', ->
           group = new Meppit.Group @map, visible: true
           group.addLayer @layerA
           group.addLayer @layerB
-          group.hide()
-
+          expect(group.hide()).to.be.eql group
           expect(@map.leafletMap.removeLayer.withArgs(@layerA).calledOnce).to.be.true
           expect(@map.leafletMap.removeLayer.withArgs(@layerB).called).to.be.false
 
       describe '#show', ->
-        it 'should show all layers added to group', ->
+        it 'shows all layers added to group', ->
           group = new Meppit.Group @map, visible: true
           group.addLayer @layerA
           group.addLayer @layerB
-          group.show()
-
+          expect(group.show()).to.be.eql group
           expect(@map.leafletMap.addLayer.withArgs(@layerA).called).to.be.false
           expect(@map.leafletMap.addLayer.withArgs(@layerB).calledOnce).to.be.true
 
     describe 'layer manipulation', ->
       describe '#getLayers', ->
-        it 'should return all layers', ->
+        it 'returns all layers', ->
           group = new Meppit.Group @map, visible: true
           group.addLayer @layerA
           group.addLayer @layerB
           expect(group.getLayers().length).to.be.equal 2
 
       describe '#addLayer', ->
-        it 'should remove layer from map if group is not visible', ->
+        it 'hides layer if group is not visible', ->
           group = new Meppit.Group @map, visible: false
-          group.addLayer @layerA
+          expect(group.addLayer @layerA).to.be.eql group
           expect(@map.leafletMap.removeLayer.withArgs(@layerA).called).to.be.true
 
-        it 'should not remove from map if group is visible', ->
+        it 'doesnt hide layer if group is visible', ->
           group = new Meppit.Group @map, visible: true
           group.addLayer @layerA
           expect(@map.leafletMap.removeLayer.withArgs(@layerA).called).to.be.false
 
-        it 'should set group style to layer', ->
+        it 'sets group style to layer', ->
           group = new Meppit.Group @map, visible: true
           @layerA.setStyle = sinon.spy()
           group.addLayer @layerA
@@ -114,7 +112,6 @@ define ['../dist/meppit-map', '../lib/leaflet'],
       @layerA = {id: 'A', feature: @geoJsonPoint}
       @layerB = {id: 'B', feature: @geoJsonPolygon}
       @map = new Meppit.Map()
-      @groupsMgr = new Meppit.GroupsManager(@map)
       @groupA =
         id: 0
         name: 'LayerA'
@@ -141,10 +138,9 @@ define ['../dist/meppit-map', '../lib/leaflet'],
     afterEach ->
       @map.destroy()
       @map = null
-      @groupsMgr = null
 
     describe 'initialization', ->
-      it 'should load groups from options param', ->
+      it 'loads groups from options param', ->
         groups = [@groupA]
         sinon.spy Meppit.GroupsManager.prototype, 'loadGroups'
         groupsMgr = new Meppit.GroupsManager @map, groups: groups
@@ -153,7 +149,7 @@ define ['../dist/meppit-map', '../lib/leaflet'],
         Meppit.GroupsManager.prototype.loadGroups.restore()
 
     describe '#count', ->
-      it 'should return the number of groups', ->
+      it 'returns the number of groups', ->
         groupsMgr = new Meppit.GroupsManager @map, groups: [@groupA]
         expect(groupsMgr.count()).to.be.eq 1
         groupsMgr.addGroup @groupB
@@ -162,24 +158,24 @@ define ['../dist/meppit-map', '../lib/leaflet'],
         expect(groupsMgr.count()).to.be.eq 1
 
     describe '#loadGroups', ->
-      it 'should load a list of groups', ->
+      it 'loads a list of groups', ->
         groupsMgr = new Meppit.GroupsManager @map
         expect(groupsMgr.count()).to.be.eq 0
         expect(groupsMgr.getGroup @groupA.id).to.be.undefined
-        groupsMgr.loadGroups [@groupB, @groupA]
+        expect(groupsMgr.loadGroups [@groupB, @groupA]).to.be.eql groupsMgr
         expect(groupsMgr.count()).to.be.eq 2
         expect(groupsMgr.getGroup(@groupA.id)).to.be.instanceOf Meppit.Group
 
     describe '#addGroup', ->
-      it 'should load a group', ->
+      it 'loads a group', ->
         groupsMgr = new Meppit.GroupsManager @map
         expect(groupsMgr.count()).to.be.eq 0
         expect(groupsMgr.getGroup @groupA.id).to.be.undefined
-        groupsMgr.addGroup @groupA
+        expect(groupsMgr.addGroup @groupA).to.be.eql groupsMgr
         expect(groupsMgr.count()).to.be.eq 1
         expect(groupsMgr.getGroup(@groupA.id)).to.be.instanceOf Meppit.Group
 
-      it 'should include layers already included to groups manager', ->
+      it 'populates the group', ->
         groupsMgr = new Meppit.GroupsManager @map
         layer = new L.Marker()
         layer.feature = @geoJsonPoint
@@ -190,27 +186,33 @@ define ['../dist/meppit-map', '../lib/leaflet'],
         expect(groupsMgr.__defaultGroup.hasLayer layer).to.be.false
 
     describe '#removeGroup', ->
-      it 'should remove a group', ->
+      it 'removes a group', ->
         groupsMgr = new Meppit.GroupsManager @map, groups: [@groupA]
         expect(groupsMgr.count()).to.be.eq 1
         expect(groupsMgr.getGroup(@groupA.id)).to.be.instanceOf Meppit.Group
-        groupsMgr.removeGroup @groupA
+        expect(groupsMgr.removeGroup @groupA).to.be.eql groupsMgr
         expect(groupsMgr.count()).to.be.eq 0
         expect(groupsMgr.getGroup @groupA.id).to.be.undefined
 
     describe '#getGroup', ->
-      it 'should accept id', ->
+      it 'accepts id as param', ->
         groupsMgr = new Meppit.GroupsManager @map, groups: [@groupA]
         expect(groupsMgr.getGroup(@groupA.id)).to.be.instanceOf Meppit.Group
         expect(groupsMgr.getGroup(@groupA.id).id).to.be.eq @groupA.id
 
-      it 'should accept data', ->
+      it 'accepts data object as param', ->
         groupsMgr = new Meppit.GroupsManager @map, groups: [@groupA]
         expect(groupsMgr.getGroup(@groupA)).to.be.instanceOf Meppit.Group
         expect(groupsMgr.getGroup(@groupA).id).to.be.eq @groupA.id
 
+      it 'accepts a group object as param', ->
+        groupsMgr = new Meppit.GroupsManager @map, groups: [@groupA]
+        group = groupsMgr.getGroup @groupA
+        expect(groupsMgr.getGroup(group)).to.be.instanceOf Meppit.Group
+        expect(groupsMgr.getGroup(group).id).to.be.eq @groupA.id
+
     describe '#getGroups', ->
-      it 'should return all groups', ->
+      it 'returns all groups, including the default group', ->
         groupsMgr = new Meppit.GroupsManager @map, groups: [@groupA, @groupB]
         expect(groupsMgr.getGroups().length).to.be.eq 3  # get default group too
         expect(groupsMgr.getGroups()[0]).to.be.instanceOf Meppit.Group
@@ -219,37 +221,37 @@ define ['../dist/meppit-map', '../lib/leaflet'],
         expect(groupsMgr.getGroups()[1].id).to.be.eq 1
 
     describe '#hasGroup', ->
-      it 'should verify if the group manager has a specific group', ->
+      it 'verifies if the group manager has a specific group', ->
         groupsMgr = new Meppit.GroupsManager @map
         expect(groupsMgr.hasGroup @groupA).to.be.false
         groupsMgr.addGroup @groupA
         expect(groupsMgr.hasGroup @groupA).to.be.true
 
     describe '#addLayer', ->
-      it 'should add layer to correct group', ->
+      it 'adds a layer to the correct group', ->
         groupsMgr = new Meppit.GroupsManager @map, groups: [@groupA, @groupB]
         expect(groupsMgr.getGroup(@groupA).hasLayer(@layerA)).to.be.false
-        groupsMgr.addLayer @layerA
+        expect(groupsMgr.addLayer @layerA).to.be.eql groupsMgr
         expect(groupsMgr.getGroup(@groupA).hasLayer(@layerA)).to.be.true
 
     describe '#addFeature', ->
-      it 'should add feature to correct group', ->
+      it 'adds a feature to the correct group', ->
         groupsMgr = new Meppit.GroupsManager @map, groups: [@groupA, @groupB]
         expect(groupsMgr.getGroup(@groupA).count()).to.be.eq 0
         @map.load @geoJsonPoint
-        groupsMgr.addFeature @geoJsonPoint
+        expect(groupsMgr.addFeature @geoJsonPoint).to.be.eql groupsMgr
         expect(groupsMgr.getGroup(@groupA).count()).to.be.eq 1
 
     describe '#show', ->
-      it 'should show the group', ->
+      it 'shows the group layers', ->
         groupsMgr = new Meppit.GroupsManager @map, groups: [@groupA, @groupB]
         expect(groupsMgr.getGroup(@groupB).visible).to.be.false
-        groupsMgr.show 1
+        expect(groupsMgr.show 1).to.be.eql groupsMgr
         expect(groupsMgr.getGroup(@groupB).visible).to.be.true
 
     describe '#hide', ->
-      it 'should hide the group', ->
+      it 'hides the group layers', ->
         groupsMgr = new Meppit.GroupsManager @map, groups: [@groupA, @groupB]
         expect(groupsMgr.getGroup(@groupA).visible).to.be.true
-        groupsMgr.hide 0
+        expect(groupsMgr.hide 0).to.be.eql groupsMgr
         expect(groupsMgr.getGroup(@groupA).visible).to.be.false

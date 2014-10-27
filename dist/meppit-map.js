@@ -433,20 +433,22 @@
 
     Group.prototype.hide = function() {
       this.visible = false;
-      return this._featureGroup.eachLayer((function(_this) {
+      this._featureGroup.eachLayer((function(_this) {
         return function(layer) {
           return _this._hideLayer(layer);
         };
       })(this));
+      return this;
     };
 
     Group.prototype.show = function() {
       this.visible = true;
-      return this._featureGroup.eachLayer((function(_this) {
+      this._featureGroup.eachLayer((function(_this) {
         return function(layer) {
           return _this._showLayer(layer);
         };
       })(this));
+      return this;
     };
 
     Group.prototype.refresh = function() {
@@ -455,7 +457,8 @@
       } else {
         this.hide();
       }
-      return this._featureGroup.setStyle(this.__style);
+      this._featureGroup.setStyle(this.__style);
+      return this;
     };
 
     Group.prototype.match = function(feature) {
@@ -471,7 +474,8 @@
       }
       this._featureGroup.addLayer(layer);
       this._setLayerVisibility(layer);
-      return this._setLayerStyle(layer);
+      this._setLayerStyle(layer);
+      return this;
     };
 
     Group.prototype.hasLayer = function(layer) {
@@ -487,7 +491,8 @@
     };
 
     Group.prototype.removeLayer = function(layer) {
-      return this._featureGroup.removeLayer(layer);
+      this._featureGroup.removeLayer(layer);
+      return this;
     };
 
     Group.prototype._initializeData = function() {
@@ -499,13 +504,14 @@
       this.fillColor = (_ref3 = (_ref4 = this.data.fillColor) != null ? _ref4 : this.data.fill_color) != null ? _ref3 : this.FILLCOLOR;
       this.rule = this.data.rule;
       this.visible = (_ref5 = this.data.visible) != null ? _ref5 : true;
-      return this.__style = {
+      this.__style = {
         color: this.strokeColor,
         fillcolor: this.fillColor,
         weight: 5,
         opacity: this.STROKEOPACITY,
         fillOpacity: this.FILLOPACITY
       };
+      return this;
     };
 
     Group.prototype._createLeafletFeatureGroup = function() {
@@ -522,24 +528,30 @@
 
     Group.prototype._hideLayer = function(layer) {
       if (this.map.leafletMap.hasLayer(layer)) {
-        return this.map.leafletMap.removeLayer(layer);
+        this.map.leafletMap.removeLayer(layer);
       }
+      return this;
     };
 
     Group.prototype._showLayer = function(layer) {
       if (!this.map.leafletMap.hasLayer(layer)) {
-        return this.map.leafletMap.addLayer(layer);
+        this.map.leafletMap.addLayer(layer);
       }
+      return this;
     };
 
     Group.prototype._setLayerStyle = function(layer) {
-      return typeof layer.setStyle === "function" ? layer.setStyle(this.__style) : void 0;
+      if (typeof layer.setStyle === "function") {
+        layer.setStyle(this.__style);
+      }
+      return this;
     };
 
     Group.prototype._setLayerVisibility = function(layer) {
       if (!this.visible) {
-        return this._hideLayer(layer);
+        this._hideLayer(layer);
       }
+      return this;
     };
 
     return Group;
@@ -642,12 +654,18 @@
 
     GroupsManager.prototype.show = function(id) {
       var _ref;
-      return (_ref = this.getGroup(id)) != null ? _ref.show() : void 0;
+      if ((_ref = this.getGroup(id)) != null) {
+        _ref.show();
+      }
+      return this;
     };
 
     GroupsManager.prototype.hide = function(id) {
       var _ref;
-      return (_ref = this.getGroup(id)) != null ? _ref.hide() : void 0;
+      if ((_ref = this.getGroup(id)) != null) {
+        _ref.hide();
+      }
+      return this;
     };
 
     GroupsManager.prototype.count = function() {
@@ -659,14 +677,16 @@
       group = this._getGroupFor(feature);
       this.log("Adding feature '" + ((_ref = feature.properties) != null ? _ref.name : void 0) + "' to group '" + group.name + "'...");
       layer = this.map._getLeafletLayer(feature);
-      return group.addLayer(layer);
+      group.addLayer(layer);
+      return this;
     };
 
     GroupsManager.prototype.addLayer = function(layer) {
       var group, _ref;
       group = this._getGroupFor(layer.feature);
       this.log("Adding feature '" + ((_ref = layer.feature.properties) != null ? _ref.name : void 0) + "' to group '" + group.name + "'...");
-      return group.addLayer(layer);
+      group.addLayer(layer);
+      return this;
     };
 
     GroupsManager.prototype._getGroupFor = function(feature) {
@@ -1017,18 +1037,22 @@
     };
 
     Map.prototype.showLayer = function(layer) {
-      this._groupsManager.show(layer);
+      this._groupsManager.show.apply(this._groupsManager, arguments);
       return this;
     };
 
     Map.prototype.hideLayer = function(layer) {
-      this._groupsManager.hide(layer);
+      this._groupsManager.hide.apply(this._groupsManager, arguments);
       return this;
     };
 
     Map.prototype.addLayer = function(layer) {
-      this._groupsManager.addGroup(layer);
+      this._groupsManager.addGroup.apply(this._groupsManager, arguments);
       return this;
+    };
+
+    Map.prototype.getLayers = function() {
+      return this._groupsManager.getGroups.apply(this._groupsManager, arguments);
     };
 
     Map.prototype.getURL = function(feature) {
