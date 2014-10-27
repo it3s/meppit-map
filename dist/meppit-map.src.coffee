@@ -450,7 +450,10 @@ class GroupsManager extends Meppit.BaseClass
     @__groups[groupId] = new Group @map, data
 
   _createDefaultGroup: ->
-    @__defaultGroup = new Group @map, name: 'Others'
+    @__defaultGroup = new Group @map,
+      id: -1
+      name: 'Others'
+    @__groups[-1] = @__defaultGroup
 
   _populateGroup: (group) ->
     for g in @getGroups() when g.position > group.position

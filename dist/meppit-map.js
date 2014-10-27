@@ -715,9 +715,11 @@
     };
 
     GroupsManager.prototype._createDefaultGroup = function() {
-      return this.__defaultGroup = new Group(this.map, {
+      this.__defaultGroup = new Group(this.map, {
+        id: -1,
         name: 'Others'
       });
+      return this.__groups[-1] = this.__defaultGroup;
     };
 
     GroupsManager.prototype._populateGroup = function(group) {
