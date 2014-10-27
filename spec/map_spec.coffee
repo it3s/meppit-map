@@ -62,6 +62,9 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         expect(map).not.to.have.property '__geoJsonTileLayer'
         map.destroy()
 
+      it 'has Groups support', ->
+        expect(@map).to.have.property '_groupsManager'
+
       it 'has tiles for map', ->
         expect(@map).to.have.property 'tileProviders'
         expect(@map.tileProviders).to.have.property 'map'
@@ -77,7 +80,7 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
       it 'has options', ->
         expect(@map.getOption 'foo').to.equal @options.foo
 
-      it 'accepts new options vlaues', ->
+      it 'accepts new options values', ->
         newValue = 'baz'
         expect(newValue).to.not.equal @options.foo
         expect(@map.getOption 'foo').to.equal @options.foo
@@ -192,6 +195,11 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
           done()
         server.respond()
         server.restore()
+
+      it 'adds features to groups', ->
+        addLayer = sinon.stub @map._groupsManager, 'addLayer'
+        @map.load @geoJsonPoint
+        expect(addLayer.calledOnce).to.be.true
 
     describe '#show', ->
       it 'loads and fit GeoJSON feature collection', (done) ->
@@ -445,6 +453,23 @@ define ['../dist/meppit-map', '../lib/leaflet', '../lib/leaflet.draw',
         zoomOut = sinon.stub @map.leafletMap, 'zoomOut'
         @map.zoomOut('arg1', 'arg2')
         expect(zoomOut.withArgs('arg1', 'arg2').calledOnce).to.be.true
+
+      it 'delegates Layers/Groups methods', ->
+        show = sinon.stub @map._groupsManager, 'show'
+        @map.showLayer('arg1', 'arg2')
+        expect(show.withArgs('arg1', 'arg2').calledOnce).to.be.true
+
+        hide = sinon.stub @map._groupsManager, 'hide'
+        @map.hideLayer('arg1', 'arg2')
+        #expect(hide.withArgs('arg1', 'arg2').calledOnce).to.be.true
+
+        addGroup = sinon.stub @map._groupsManager, 'addGroup'
+        @map.addLayer('arg1', 'arg2')
+        #expect(addGroup.withArgs('arg1', 'arg2').calledOnce).to.be.true
+
+        getGroups = sinon.stub @map._groupsManager, 'getGroups'
+        @map.getLayers('arg1', 'arg2')
+        #expect(addGroups.withArgs('arg1', 'arg2').calledOnce).to.be.true
 
       it 'delegates _addLeafletControl to addControl', ->
         addControl = sinon.stub @map.leafletMap, 'addControl'

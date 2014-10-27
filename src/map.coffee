@@ -19,8 +19,10 @@ class Map extends Meppit.BaseClass
     @editing = false
     @buttons = {}
     @_ensureLeafletMap()
+    @_ensureEditorManager()
     @_ensureTileProviders()
     @_ensureGeoJsonManager()
+    @_ensureGroupsManager()
     @__defineLeafletDefaultImagePath()
     @selectTileProvider @getOption('tileProvider')
 
@@ -188,6 +190,21 @@ class Map extends Meppit.BaseClass
     @leafletMap.zoomOut.apply @leafletMap, arguments
     this
 
+  showLayer: (layer) ->
+    @_groupsManager.show.apply @_groupsManager, arguments
+    this
+
+  hideLayer: (layer) ->
+    @_groupsManager.hide.apply @_groupsManager, arguments
+    this
+
+  addLayer: (layer) ->
+    @_groupsManager.addGroup.apply @_groupsManager, arguments
+    this
+
+  getLayers: ->
+    @_groupsManager.getGroups.apply @_groupsManager, arguments
+
   getURL: (feature) ->
     url = feature?.properties?[@getOption 'urlPropertyName']
     return url if url?
@@ -299,14 +316,26 @@ class Map extends Meppit.BaseClass
       @__addLayerEventListeners feature, layer
     styleCallback = =>
       # TODO
+    pointToLayerCallback = (feature, latLng) =>
+      L.circleMarker latLng,
+        weight: 5
+        radius: 7
     options =
       style: styleCallback
       onEachFeature: onEachFeatureCallback
+      pointToLayer: pointToLayerCallback
     @__geoJsonTileLayer ?= (new L.TileLayer.GeoJSON(@_getGeoJsonTileURL(), {
         clipTiles: true
         unique: (feature) => @_getGeoJSONId feature
       }, options)).addTo @leafletMap if @getOption 'enableGeoJsonTile'
     @_geoJsonManager ?= new L.GeoJSON([], options).addTo @leafletMap
+    @_geoJsonManager.on 'layeradd', (evt) =>
+      @__addLayerToGroups evt.layer
+
+  _ensureGroupsManager: ->
+    @_groupsManager ?= new Meppit.GroupsManager?(this, @options) ?
+        @warn 'Groups manager have not been loaded'
+    @_groupsManager
 
   _ensureEditorManager: ->
     if not @getOption 'enableEditor'
@@ -405,5 +434,8 @@ class Map extends Meppit.BaseClass
         imagePath = (if path then path + '/' else '') + 'images'
         break
     L.Icon.Default.imagePath = imagePath
+
+  __addLayerToGroups: (layer) ->
+    @_groupsManager.addLayer layer
 
 window.Meppit.Map = Map

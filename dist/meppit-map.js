@@ -1,7 +1,8 @@
 (function() {
-  var BaseClass, EditorManager, Map, Popup, counter, getDate, getHash, interpolate, isArray, isNumber, isString, requestJSON, reverseCoordinates, _log, _warn,
+  var BaseClass, EditorManager, Group, GroupsManager, Map, Popup, and_ops, contains_ops, counter, equal_ops, eval_expr, getDate, getHash, in_ops, interpolate, isArray, isNumber, isString, not_equal_ops, not_ops, or_ops, requestJSON, reverseCoordinates, _log, _warn,
     __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   if (window.Meppit == null) {
     window.Meppit = {};
@@ -188,6 +189,7 @@
       this.options = options != null ? options : {};
       EditorManager.__super__.constructor.apply(this, arguments);
       this.log('Initializing Editor Manager...');
+      this._applyFixes();
       this._initToolbars();
       this._uneditedLayerProps = {};
     }
@@ -319,7 +321,7 @@
           return this._uneditedLayerProps[id] = {
             latlngs: L.LatLngUtil.cloneLatLngs(layer.getLatLngs())
           };
-        } else if (layer instanceof L.Marker) {
+        } else if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
           return this._uneditedLayerProps[id] = {
             latlng: L.LatLngUtil.cloneLatLng(layer.getLatLng())
           };
@@ -337,10 +339,36 @@
       if (this._uneditedLayerProps.hasOwnProperty(id)) {
         if (layer instanceof L.Polyline || layer instanceof L.Polygon) {
           return layer.setLatLngs(this._uneditedLayerProps[id].latlngs);
-        } else if (layer instanceof L.Marker) {
+        } else if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
           return layer.setLatLng(this._uneditedLayerProps[id].latlng);
         }
       }
+    };
+
+    EditorManager.prototype._applyFixes = function() {
+      L.Edit.CircleMarker = L.Edit.Circle.extend({
+        _resize: function() {}
+      });
+      return L.CircleMarker.addInitHook(function() {
+        if (L.Edit.CircleMarker) {
+          this.editing = new L.Edit.CircleMarker(this);
+          if (this.options.editable) {
+            this.editing.enable();
+          }
+        }
+        this.on('add', function() {
+          var _ref;
+          if ((_ref = this.editing) != null ? _ref.enabled() : void 0) {
+            return this.editing.addHooks();
+          }
+        });
+        return this.on('remove', function() {
+          var _ref;
+          if ((_ref = this.editing) != null ? _ref.enabled() : void 0) {
+            return this.editing.removeHooks();
+          }
+        });
+      });
     };
 
     return EditorManager;
@@ -348,6 +376,382 @@
   })(Meppit.BaseClass);
 
   window.Meppit.EditorManager = EditorManager;
+
+  equal_ops = ['==', 'is', 'equal', 'equals'];
+
+  not_equal_ops = ['!=', 'isnt', 'not equal', 'not equals', 'different'];
+
+  in_ops = ['in'];
+
+  contains_ops = ['contains', 'has'];
+
+  not_ops = ['!', 'not'];
+
+  or_ops = ['or'];
+
+  and_ops = ['and'];
+
+  eval_expr = function(expr, obj) {
+    var objValue, operator, res, v, _i, _len, _ref, _ref1;
+    if ((expr == null) || (expr.operator == null)) {
+      return true;
+    }
+    operator = expr.operator;
+    objValue = (_ref = obj[expr.property]) != null ? _ref : obj.properties[expr.property];
+    if (__indexOf.call(contains_ops, operator) >= 0 && Object.prototype.toString.call(expr.value) === '[object Array]') {
+      res = true;
+      _ref1 = expr.value;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        v = _ref1[_i];
+        res = res && (objValue != null) && __indexOf.call(objValue, v) >= 0;
+      }
+      return res;
+    }
+  };
+
+  Group = (function(_super) {
+    __extends(Group, _super);
+
+    Group.prototype.POSITION = 999;
+
+    Group.prototype.FILLCOLOR = '#0000ff';
+
+    Group.prototype.STROKECOLOR = '#0000ff';
+
+    Group.prototype.FILLOPACITY = 0.4;
+
+    Group.prototype.STROKEOPACITY = 0.8;
+
+    function Group(map, data) {
+      this.map = map;
+      this.data = data;
+      Group.__super__.constructor.apply(this, arguments);
+      this._initializeData();
+      this._featureGroup = this._createLeafletFeatureGroup();
+      this.refresh();
+    }
+
+    Group.prototype.hide = function() {
+      this.visible = false;
+      this._featureGroup.eachLayer((function(_this) {
+        return function(layer) {
+          return _this._hideLayer(layer);
+        };
+      })(this));
+      return this;
+    };
+
+    Group.prototype.show = function() {
+      this.visible = true;
+      this._featureGroup.eachLayer((function(_this) {
+        return function(layer) {
+          return _this._showLayer(layer);
+        };
+      })(this));
+      return this;
+    };
+
+    Group.prototype.refresh = function() {
+      if (this.visible === true) {
+        this.show();
+      } else {
+        this.hide();
+      }
+      this._featureGroup.setStyle(this.__style);
+      return this;
+    };
+
+    Group.prototype.match = function(feature) {
+      if (feature != null ? feature.feature : void 0) {
+        feature = feature.feature;
+      }
+      return eval_expr(this.rule, feature);
+    };
+
+    Group.prototype.addLayer = function(layer) {
+      if (this.hasLayer(layer)) {
+        return;
+      }
+      this._featureGroup.addLayer(layer);
+      this._setLayerVisibility(layer);
+      this._setLayerStyle(layer);
+      return this;
+    };
+
+    Group.prototype.hasLayer = function(layer) {
+      return this._featureGroup.hasLayer(layer);
+    };
+
+    Group.prototype.getLayers = function() {
+      return this._featureGroup.getLayers();
+    };
+
+    Group.prototype.count = function() {
+      return this.getLayers().length;
+    };
+
+    Group.prototype.removeLayer = function(layer) {
+      this._featureGroup.removeLayer(layer);
+      return this;
+    };
+
+    Group.prototype._initializeData = function() {
+      var _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
+      this.name = this.data.name;
+      this.id = this.data.id;
+      this.position = (_ref = this.data.position) != null ? _ref : this.POSITION;
+      this.strokeColor = (_ref1 = (_ref2 = this.data.strokeColor) != null ? _ref2 : this.data.stroke_color) != null ? _ref1 : this.STROKECOLOR;
+      this.fillColor = (_ref3 = (_ref4 = this.data.fillColor) != null ? _ref4 : this.data.fill_color) != null ? _ref3 : this.FILLCOLOR;
+      this.rule = this.data.rule;
+      this.visible = (_ref5 = this.data.visible) != null ? _ref5 : true;
+      this.__style = {
+        color: this.strokeColor,
+        fillcolor: this.fillColor,
+        weight: 5,
+        opacity: this.STROKEOPACITY,
+        fillOpacity: this.FILLOPACITY
+      };
+      return this;
+    };
+
+    Group.prototype._createLeafletFeatureGroup = function() {
+      var featureGroup;
+      featureGroup = L.geoJson();
+      featureGroup.on('layeradd', (function(_this) {
+        return function(evt) {
+          _this._setLayerVisibility(evt.layer);
+          return _this._setLayerStyle(evt.layer);
+        };
+      })(this));
+      return featureGroup;
+    };
+
+    Group.prototype._hideLayer = function(layer) {
+      if (this.map.leafletMap.hasLayer(layer)) {
+        this.map.leafletMap.removeLayer(layer);
+      }
+      return this;
+    };
+
+    Group.prototype._showLayer = function(layer) {
+      if (!this.map.leafletMap.hasLayer(layer)) {
+        this.map.leafletMap.addLayer(layer);
+      }
+      return this;
+    };
+
+    Group.prototype._setLayerStyle = function(layer) {
+      if (typeof layer.setStyle === "function") {
+        layer.setStyle(this.__style);
+      }
+      return this;
+    };
+
+    Group.prototype._setLayerVisibility = function(layer) {
+      if (!this.visible) {
+        this._hideLayer(layer);
+      }
+      return this;
+    };
+
+    return Group;
+
+  })(Meppit.BaseClass);
+
+  GroupsManager = (function(_super) {
+    __extends(GroupsManager, _super);
+
+    function GroupsManager(map, options) {
+      var _ref;
+      this.map = map;
+      this.options = options != null ? options : {};
+      GroupsManager.__super__.constructor.apply(this, arguments);
+      this.log('Initializing Groups Manager...');
+      this.__groups = {};
+      this.__groupsIds = [];
+      this._createDefaultGroup();
+      this.loadGroups((_ref = this.options.groups) != null ? _ref : this.options.layers);
+    }
+
+    GroupsManager.prototype.loadGroups = function(groups) {
+      var group, _i, _len;
+      if (groups == null) {
+        return;
+      }
+      for (_i = 0, _len = groups.length; _i < _len; _i++) {
+        group = groups[_i];
+        this.addGroup(group);
+      }
+      return this;
+    };
+
+    GroupsManager.prototype.addGroup = function(data) {
+      var group;
+      if (this.hasGroup(data)) {
+        return;
+      }
+      group = this._createGroup(data);
+      this.log("Adding group '" + group.name + "'...");
+      this._populateGroup(group);
+      return this;
+    };
+
+    GroupsManager.prototype.removeGroup = function(data) {
+      var group, groupId, groupsIds, id;
+      group = this.getGroup(data);
+      if (group == null) {
+        return;
+      }
+      this.log("Removing group '" + group.name + "'...");
+      groupId = this._getGroupId(group);
+      groupsIds = (function() {
+        var _i, _len, _ref, _results;
+        _ref = this.__groupsIds;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          id = _ref[_i];
+          if (id !== groupId) {
+            _results.push(id);
+          }
+        }
+        return _results;
+      }).call(this);
+      this.__groupsIds = groupsIds;
+      this.__groups[groupId] = void 0;
+      return this;
+    };
+
+    GroupsManager.prototype.getGroup = function(id) {
+      if (id instanceof Group) {
+        return id;
+      } else if (Meppit.isNumber(id)) {
+        return this.__groups[id];
+      } else if ((id != null ? id.id : void 0) != null) {
+        return this.getGroup(id.id);
+      }
+    };
+
+    GroupsManager.prototype.getGroups = function() {
+      var groupId, groups;
+      groups = (function() {
+        var _i, _len, _ref, _results;
+        _ref = this.__groupsIds;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          groupId = _ref[_i];
+          _results.push(this.__groups[groupId]);
+        }
+        return _results;
+      }).call(this);
+      groups.push(this.__defaultGroup);
+      return groups;
+    };
+
+    GroupsManager.prototype.hasGroup = function(group) {
+      var _ref;
+      return _ref = this._getGroupId(group), __indexOf.call(this.__groupsIds, _ref) >= 0;
+    };
+
+    GroupsManager.prototype.show = function(id) {
+      var _ref;
+      if ((_ref = this.getGroup(id)) != null) {
+        _ref.show();
+      }
+      return this;
+    };
+
+    GroupsManager.prototype.hide = function(id) {
+      var _ref;
+      if ((_ref = this.getGroup(id)) != null) {
+        _ref.hide();
+      }
+      return this;
+    };
+
+    GroupsManager.prototype.count = function() {
+      return this.__groupsIds.length;
+    };
+
+    GroupsManager.prototype.addFeature = function(feature) {
+      var group, layer, _ref;
+      group = this._getGroupFor(feature);
+      this.log("Adding feature '" + ((_ref = feature.properties) != null ? _ref.name : void 0) + "' to group '" + group.name + "'...");
+      layer = this.map._getLeafletLayer(feature);
+      group.addLayer(layer);
+      return this;
+    };
+
+    GroupsManager.prototype.addLayer = function(layer) {
+      var group, _ref;
+      group = this._getGroupFor(layer.feature);
+      this.log("Adding feature '" + ((_ref = layer.feature.properties) != null ? _ref.name : void 0) + "' to group '" + group.name + "'...");
+      group.addLayer(layer);
+      return this;
+    };
+
+    GroupsManager.prototype._getGroupFor = function(feature) {
+      var group, _i, _len, _ref;
+      _ref = this.getGroups();
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        group = _ref[_i];
+        if (group.match(feature)) {
+          return group;
+        }
+      }
+      return this.__defaultGroup;
+    };
+
+    GroupsManager.prototype._getGroupId = function(group) {
+      return group.id;
+    };
+
+    GroupsManager.prototype._createGroup = function(data) {
+      var groupId;
+      groupId = this._getGroupId(data);
+      this.__groupsIds.push(groupId);
+      return this.__groups[groupId] = new Group(this.map, data);
+    };
+
+    GroupsManager.prototype._createDefaultGroup = function() {
+      return this.__defaultGroup = new Group(this.map, {
+        name: 'Others'
+      });
+    };
+
+    GroupsManager.prototype._populateGroup = function(group) {
+      var g, l, _i, _len, _ref, _results;
+      _ref = this.getGroups();
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        g = _ref[_i];
+        if (g.position > group.position) {
+          _results.push((function() {
+            var _j, _len1, _ref1, _results1;
+            _ref1 = g.getLayers();
+            _results1 = [];
+            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+              l = _ref1[_j];
+              if (group.match(l)) {
+                g.removeLayer(l);
+                _results1.push(group.addLayer(l));
+              } else {
+                _results1.push(void 0);
+              }
+            }
+            return _results1;
+          })());
+        }
+      }
+      return _results;
+    };
+
+    return GroupsManager;
+
+  })(Meppit.BaseClass);
+
+  window.Meppit.Group = Group;
+
+  window.Meppit.GroupsManager = GroupsManager;
 
   Map = (function(_super) {
     __extends(Map, _super);
@@ -375,8 +779,10 @@
       this.editing = false;
       this.buttons = {};
       this._ensureLeafletMap();
+      this._ensureEditorManager();
       this._ensureTileProviders();
       this._ensureGeoJsonManager();
+      this._ensureGroupsManager();
       this.__defineLeafletDefaultImagePath();
       this.selectTileProvider(this.getOption('tileProvider'));
     }
@@ -630,6 +1036,25 @@
       return this;
     };
 
+    Map.prototype.showLayer = function(layer) {
+      this._groupsManager.show.apply(this._groupsManager, arguments);
+      return this;
+    };
+
+    Map.prototype.hideLayer = function(layer) {
+      this._groupsManager.hide.apply(this._groupsManager, arguments);
+      return this;
+    };
+
+    Map.prototype.addLayer = function(layer) {
+      this._groupsManager.addGroup.apply(this._groupsManager, arguments);
+      return this;
+    };
+
+    Map.prototype.getLayers = function() {
+      return this._groupsManager.getGroups.apply(this._groupsManager, arguments);
+    };
+
     Map.prototype.getURL = function(feature) {
       var url, _ref;
       url = feature != null ? (_ref = feature.properties) != null ? _ref[this.getOption('urlPropertyName')] : void 0 : void 0;
@@ -774,7 +1199,7 @@
     };
 
     Map.prototype._ensureGeoJsonManager = function() {
-      var onEachFeatureCallback, options, styleCallback;
+      var onEachFeatureCallback, options, pointToLayerCallback, styleCallback;
       if (this.leafletLayers == null) {
         this.leafletLayers = {};
       }
@@ -787,9 +1212,18 @@
       styleCallback = (function(_this) {
         return function() {};
       })(this);
+      pointToLayerCallback = (function(_this) {
+        return function(feature, latLng) {
+          return L.circleMarker(latLng, {
+            weight: 5,
+            radius: 7
+          });
+        };
+      })(this);
       options = {
         style: styleCallback,
-        onEachFeature: onEachFeatureCallback
+        onEachFeature: onEachFeatureCallback,
+        pointToLayer: pointToLayerCallback
       };
       if (this.getOption('enableGeoJsonTile')) {
         if (this.__geoJsonTileLayer == null) {
@@ -803,7 +1237,22 @@
           }, options)).addTo(this.leafletMap);
         }
       }
-      return this._geoJsonManager != null ? this._geoJsonManager : this._geoJsonManager = new L.GeoJSON([], options).addTo(this.leafletMap);
+      if (this._geoJsonManager == null) {
+        this._geoJsonManager = new L.GeoJSON([], options).addTo(this.leafletMap);
+      }
+      return this._geoJsonManager.on('layeradd', (function(_this) {
+        return function(evt) {
+          return _this.__addLayerToGroups(evt.layer);
+        };
+      })(this));
+    };
+
+    Map.prototype._ensureGroupsManager = function() {
+      var _ref;
+      if (this._groupsManager == null) {
+        this._groupsManager = (_ref = typeof Meppit.GroupsManager === "function" ? new Meppit.GroupsManager(this, this.options) : void 0) != null ? _ref : this.warn('Groups manager have not been loaded');
+      }
+      return this._groupsManager;
     };
 
     Map.prototype._ensureEditorManager = function() {
@@ -951,6 +1400,10 @@
         }
       }
       return L.Icon.Default.imagePath = imagePath;
+    };
+
+    Map.prototype.__addLayerToGroups = function(layer) {
+      return this._groupsManager.addLayer(layer);
     };
 
     return Map;

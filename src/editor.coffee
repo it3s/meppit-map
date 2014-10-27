@@ -6,6 +6,7 @@ class EditorManager extends Meppit.BaseClass
   constructor: (@map, @options = {}) ->
     super
     @log 'Initializing Editor Manager...'
+    @_applyFixes()
     @_initToolbars()
     @_uneditedLayerProps = {}
 
@@ -94,7 +95,8 @@ class EditorManager extends Meppit.BaseClass
       if layer instanceof L.Polyline or layer instanceof L.Polygon
         @_uneditedLayerProps[id] =
           latlngs: L.LatLngUtil.cloneLatLngs layer.getLatLngs()
-      else if layer instanceof L.Marker  # Marker
+      # Marker
+      else if layer instanceof L.Marker or layer instanceof L.CircleMarker
         @_uneditedLayerProps[id] =
           latlng: L.LatLngUtil.cloneLatLng layer.getLatLng()
 
@@ -107,7 +109,23 @@ class EditorManager extends Meppit.BaseClass
       # Polyline or Polygon
       if layer instanceof L.Polyline or layer instanceof L.Polygon
         layer.setLatLngs this._uneditedLayerProps[id].latlngs
-      else if layer instanceof L.Marker  # Marker
+      # Marker
+      else if layer instanceof L.Marker or layer instanceof L.CircleMarker
         layer.setLatLng this._uneditedLayerProps[id].latlng
+
+
+  _applyFixes: ->
+    # Remove resize handler from CircleMarker
+    # https://github.com/Leaflet/Leaflet.draw/issues/226
+    L.Edit.CircleMarker = L.Edit.Circle.extend
+      _resize: ->
+
+    L.CircleMarker.addInitHook ->
+      if L.Edit.CircleMarker
+        @editing = new L.Edit.CircleMarker(this)
+        @editing.enable() if @options.editable
+
+      @on 'add',    -> @editing.addHooks()    if @editing?.enabled()
+      @on 'remove', -> @editing.removeHooks() if @editing?.enabled()
 
 window.Meppit.EditorManager = EditorManager

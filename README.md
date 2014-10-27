@@ -36,6 +36,7 @@ geojsonTileURL | `String` | `'#{baseURL}geoJSON/{z}/{x}/{y}'` | The URL used to 
 enableEditor | `Boolean` | `true` | Whether the features can be edited and drawn
 enablePopup | `Boolean` | `true` | Whether a popup should be shown when a features is clicked
 enableGeoJsonTile | `Boolean` | `false` | Whether features will be loaded automatically
+layers | `LayerOption[]` | undefined | List of layers used to group features
 
 
 #### Methods
@@ -67,6 +68,10 @@ enableGeoJsonTile | `Boolean` | `false` | Whether features will be loaded automa
  * `removeButton( <String> id )` returns `this`
  * `showButton( <String> id )` returns `this`
  * `hideButton( <String> id )` returns `this`
+ * `addLayer( <LayerOption> layer )` returns `this`
+ * `showLayer( <Number or LayerOption> id )` returns `this`
+ * `hideLayer( <Number or LayerOption> id )` returns `this`
+ * `getLayers()` returns `Group[]`
  * `destroy()` returns `undefined`
 
 
