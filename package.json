@@ -1,6 +1,6 @@
 {
   "name": "meppit-map",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "main": "dist/meppit-map.full.min.js",
   "description": "javascript library for Meppit's map component",
   "repository": {
@@ -19,12 +19,15 @@
     {
       "name": "Luiz Armesto",
       "email": "luiz.armesto@gmail.com"
+    },
+    {
+      "name": "Anderson Pierre Cardoso"
     }
   ],
   "licenses": [
     {
       "type": "MIT",
-      "url": "http://github.com/LuizArmesto/backbone.leaflet/blob/master/LICENSE"
+      "url": "https://github.com/it3s/meppit-map/blob/master/LICENSE.txt"
     }
   ],
   "readmeFilename": "README.md",
