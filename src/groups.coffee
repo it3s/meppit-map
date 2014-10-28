@@ -98,7 +98,7 @@ class Group extends Meppit.BaseClass
     @visible = @data.visible ? true
     @__style =
       color: @strokeColor
-      fillcolor: @fillColor
+      fillColor: @fillColor
       weight: @WEIGHT
       opacity: @STROKEOPACITY
       fillOpacity: @FILLOPACITY

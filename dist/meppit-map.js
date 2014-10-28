@@ -508,7 +508,7 @@
       this.visible = (_ref5 = this.data.visible) != null ? _ref5 : true;
       this.__style = {
         color: this.strokeColor,
-        fillcolor: this.fillColor,
+        fillColor: this.fillColor,
         weight: this.WEIGHT,
         opacity: this.STROKEOPACITY,
         fillOpacity: this.FILLOPACITY
