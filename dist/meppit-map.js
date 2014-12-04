@@ -769,8 +769,8 @@
       tileProvider: 'map',
       idPropertyName: 'id',
       urlPropertyName: 'url',
-      featureURL: '#{baseURL}features/#{id}',
-      geojsonTileURL: '#{baseURL}geoJSON/{z}/{x}/{y}',
+      featureURL: '#{baseURL}geo_data/#{id}',
+      geojsonTileURL: '#{baseURL}geo_data/tile/{z}/{x}/{y}',
       enableEditor: true,
       enablePopup: true,
       enableGeoJsonTile: false
@@ -821,7 +821,7 @@
             count++;
             respCollection.features.push(resp);
             if (count === data.length) {
-              return callback(respCollection);
+              return typeof callback === "function" ? callback(respCollection) : void 0;
             }
           });
         }
@@ -1229,26 +1229,23 @@
         onEachFeature: onEachFeatureCallback,
         pointToLayer: pointToLayerCallback
       };
-      if (this.getOption('enableGeoJsonTile')) {
-        if (this.__geoJsonTileLayer == null) {
-          this.__geoJsonTileLayer = (new L.TileLayer.GeoJSON(this._getGeoJsonTileURL(), {
-            clipTiles: true,
-            unique: (function(_this) {
-              return function(feature) {
-                return _this._getGeoJSONId(feature);
-              };
-            })(this)
-          }, options)).addTo(this.leafletMap);
-        }
-      }
       if (this._geoJsonManager == null) {
         this._geoJsonManager = new L.GeoJSON([], options).addTo(this.leafletMap);
       }
-      return this._geoJsonManager.on('layeradd', (function(_this) {
+      this._geoJsonManager.on('layeradd', (function(_this) {
         return function(evt) {
           return _this.__addLayerToGroups(evt.layer);
         };
       })(this));
+      if (this.getOption('enableGeoJsonTile')) {
+        return this.__geoJsonTileLayer != null ? this.__geoJsonTileLayer : this.__geoJsonTileLayer = (new L.TileLayer.GeoJSON(this._getGeoJsonTileURL(), {
+          unique: (function(_this) {
+            return function(feature) {
+              return _this._getGeoJSONId(feature);
+            };
+          })(this)
+        }, this)).addTo(this.leafletMap);
+      }
     };
 
     Map.prototype._ensureGroupsManager = function() {
@@ -1312,7 +1309,7 @@
       if (Meppit.isNumber(feature)) {
         return feature;
       }
-      return (_ref = feature.properties) != null ? _ref[this.getOption('idPropertyName')] : void 0;
+      return ((_ref = feature.properties) != null ? _ref[this.getOption('idPropertyName')] : void 0) || feature[this.getOption('idPropertyName')];
     };
 
     Map.prototype._getGeoJSONHash = function(feature) {

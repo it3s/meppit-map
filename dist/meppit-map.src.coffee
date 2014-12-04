@@ -474,8 +474,8 @@ class Map extends Meppit.BaseClass
     tileProvider: 'map'
     idPropertyName: 'id'
     urlPropertyName: 'url'
-    featureURL: '#{baseURL}features/#{id}'
-    geojsonTileURL: '#{baseURL}geoJSON/{z}/{x}/{y}'
+    featureURL: '#{baseURL}geo_data/#{id}'
+    geojsonTileURL: '#{baseURL}geo_data/tile/{z}/{x}/{y}'
     enableEditor: true
     enablePopup: true
     enableGeoJsonTile: false
@@ -516,7 +516,7 @@ class Map extends Meppit.BaseClass
           count++
           respCollection.features.push resp
           if count == data.length
-            callback respCollection
+            callback? respCollection
     else
       # Removes the old version of already loaded features before loading the
       # new one.
@@ -791,13 +791,13 @@ class Map extends Meppit.BaseClass
       style: styleCallback
       onEachFeature: onEachFeatureCallback
       pointToLayer: pointToLayerCallback
-    @__geoJsonTileLayer ?= (new L.TileLayer.GeoJSON(@_getGeoJsonTileURL(), {
-        clipTiles: true
-        unique: (feature) => @_getGeoJSONId feature
-      }, options)).addTo @leafletMap if @getOption 'enableGeoJsonTile'
     @_geoJsonManager ?= new L.GeoJSON([], options).addTo @leafletMap
     @_geoJsonManager.on 'layeradd', (evt) =>
       @__addLayerToGroups evt.layer
+    @__geoJsonTileLayer ?= (new L.TileLayer.GeoJSON(@_getGeoJsonTileURL(), {
+      unique: (feature) =>
+        @_getGeoJSONId feature
+      }, this)).addTo @leafletMap if @getOption 'enableGeoJsonTile'
 
   _ensureGroupsManager: ->
     @_groupsManager ?= new Meppit.GroupsManager?(this, @options) ?
@@ -844,7 +844,7 @@ class Map extends Meppit.BaseClass
 
   _getGeoJSONId: (feature) ->
     return feature if Meppit.isNumber feature  # the argument is the id itself
-    feature.properties?[@getOption 'idPropertyName']
+    feature.properties?[@getOption 'idPropertyName'] or feature[@getOption 'idPropertyName']
 
   _getGeoJSONHash: (feature) ->
     Meppit.getHash JSON.stringify(feature)
