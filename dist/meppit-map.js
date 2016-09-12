@@ -773,7 +773,10 @@
       geojsonTileURL: '#{baseURL}geo_data/tile/{z}/{x}/{y}',
       enableEditor: true,
       enablePopup: true,
-      enableGeoJsonTile: false
+      enableGeoJsonTile: false,
+      mapboxToken: typeof __testing !== "undefined" && __testing !== null ? __testing : {
+        __testToken: void 0
+      }
     };
 
     function Map(options) {
@@ -1286,15 +1289,19 @@
         this.tileProviders = {};
       }
       if ((_base = this.tileProviders).map == null) {
-        _base.map = new L.TileLayer('http://{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.png', {
-          attribution: 'Data, imagery and map information provided by ' + '<a href="http://www.mapquest.com/">MapQuest</a>, ' + '<a href="http://www.openstreetmap.org/">Open Street Map</a> ' + 'and contributors, <a href="http://creativecommons.org/' + 'licenses/by-sa/2.0/">CC-BY-SA</a>.',
-          subdomains: ['otile1', 'otile2', 'otile3', 'otile4']
+        _base.map = new L.TileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+          attribution: 'Map data &copy; ' + '<a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' + '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' + 'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+          maxZoom: 18,
+          id: 'mapbox.streets',
+          accessToken: this.getOption('mapboxToken')
         });
       }
       if ((_base1 = this.tileProviders).satellite == null) {
-        _base1.satellite = new L.TileLayer('http://{s}.mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.jpg', {
-          attribution: 'Data and imagery provided by ' + '<a href="http://www.mapquest.com/">MapQuest</a>a>. ' + 'Portions Courtesy NASA/JPL-Caltech and ' + 'U.S. Depart. of Agriculture, Farm Service Agency.',
-          subdomains: ['otile1', 'otile2', 'otile3', 'otile4']
+        _base1.satellite = new L.TileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+          attribution: 'Map data &copy; ' + '<a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' + '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' + 'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+          maxZoom: 18,
+          id: 'mapbox.satellite',
+          accessToken: this.getOption('mapboxToken')
         });
       }
       return this.tileProviders;

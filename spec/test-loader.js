@@ -96,6 +96,8 @@ define([
 
   return {
     start: function() {
+      window.__testing = true;
+      window.__testToken = 'pk.eyJ1IjoibWVwcGl0IiwiYSI6ImNpc3pncnozYzBobWYyb3BnMXgxNWN6cWcifQ.jBGkz5FC3zrB10uU-liRmw';
       // Once dependencies have been loaded using RequireJS, go ahead and run the tests...
       mocha.run();
     }
