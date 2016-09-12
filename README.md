@@ -1,4 +1,4 @@
-# Meppit-Map 0.2.0
+# Meppit-Map 0.3.0
 
 [![Build Status](https://travis-ci.org/it3s/meppit-map.svg)](https://travis-ci.org/it3s/meppit-map)
 
