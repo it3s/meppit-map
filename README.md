@@ -16,7 +16,8 @@ Javascript library for Meppit's map component.
 var map = new Meppit.Map({
   element: 'map_container',
   center: [48.858333, 2.294444],
-  zoom: 13
+  zoom: 13,
+  mapboxToken: 'your mapbox.com api token'
 });
 ```
 
@@ -37,6 +38,7 @@ enableEditor | `Boolean` | `true` | Whether the features can be edited and drawn
 enablePopup | `Boolean` | `true` | Whether a popup should be shown when a features is clicked
 enableGeoJsonTile | `Boolean` | `false` | Whether features will be loaded automatically
 layers | `LayerOption[]` | undefined | List of layers used to group features
+mapboxToken | `String` | undefined | You mapbox.com api token (**required**)
 
 
 #### Methods

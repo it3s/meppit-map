@@ -479,6 +479,7 @@ class Map extends Meppit.BaseClass
     enableEditor: true
     enablePopup: true
     enableGeoJsonTile: false
+    mapboxToken: __testing ? __testToken : undefined
 
   constructor: (@options = {}) ->
     super
@@ -823,20 +824,25 @@ class Map extends Meppit.BaseClass
   _ensureTileProviders: ->
     @tileProviders ?= {}
     @tileProviders.map ?= new L.TileLayer(
-        'http://{s}.mqcdn.com/tiles/1.0.0/map/{z}/{x}/{y}.png',
-            attribution: 'Data, imagery and map information provided by '+
-            '<a href="http://www.mapquest.com/">MapQuest</a>, '+
-            '<a href="http://www.openstreetmap.org/">Open Street Map</a> '+
-            'and contributors, <a href="http://creativecommons.org/'+
-            'licenses/by-sa/2.0/">CC-BY-SA</a>.'
-            subdomains: ['otile1', 'otile2', 'otile3', 'otile4'] )
+        'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}',
+            attribution: 'Map data &copy; ' +
+            '<a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+            '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+            'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+            maxZoom: 18,
+            id: 'mapbox.streets',
+            accessToken: @getOption('mapboxToken')
+    )
     @tileProviders.satellite ?= new L.TileLayer(
-        'http://{s}.mqcdn.com/tiles/1.0.0/sat/{z}/{x}/{y}.jpg',
-            attribution: 'Data and imagery provided by ' +
-            '<a href="http://www.mapquest.com/">MapQuest</a>a>. ' +
-            'Portions Courtesy NASA/JPL-Caltech and ' +
-            'U.S. Depart. of Agriculture, Farm Service Agency.'
-            subdomains: ['otile1', 'otile2', 'otile3', 'otile4'] )
+        'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}',
+            attribution: 'Map data &copy; ' +
+            '<a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+            '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+            'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+            maxZoom: 18,
+            id: 'mapbox.satellite',
+            accessToken: @getOption('mapboxToken')
+    )
     @tileProviders
 
   _addLeafletControl: ->

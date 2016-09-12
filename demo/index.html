@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8">
     <title>meppit-map demo</title>
     <link rel="stylesheet" href="./assets/normalize.css" />
     <link rel="stylesheet" href="../lib/leaflet.css" />
@@ -34,7 +35,6 @@
 
     <script>
       /* begin demo script */
-
       var geoJson = {
         "type": "FeatureCollection",
         "features": [
@@ -87,7 +87,10 @@
 
       var map = new Meppit.Map({
         element: 'map-container',
-        enableGeoJsonTile: false
+        enableGeoJsonTile: false,
+        // you must generate a token on www.mapbox.com
+        // mapboxToken: 'your.mapbox.token'
+        mapboxToken: 'pk.eyJ1IjoibWVwcGl0IiwiYSI6ImNpc3pncnozYzBobWYyb3BnMXgxNWN6cWcifQ.jBGkz5FC3zrB10uU-liRmw'
       });
 
       map.show(geoJson);
