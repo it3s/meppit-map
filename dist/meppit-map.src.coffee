@@ -220,8 +220,17 @@ class EditorManager extends Meppit.BaseClass
   _applyFixes: ->
     # Remove resize handler from CircleMarker
     # https://github.com/Leaflet/Leaflet.draw/issues/226
-    L.Edit.CircleMarker = L.Edit.Circle.extend
-      _resize: ->
+    L.Edit.CircleMarker = L.Edit.Circle.extend(
+      _initMarkers: ->
+        this._markerGroup = new L.LayerGroup() if !@_markerGroup
+
+        # Create center marker
+        @._createMoveMarker()
+
+      _move: (latlng) ->
+        # Move the circle
+        @_shape.setLatLng(latlng)
+    )
 
     L.CircleMarker.addInitHook ->
       if L.Edit.CircleMarker

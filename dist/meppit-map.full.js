@@ -347,7 +347,15 @@
 
     EditorManager.prototype._applyFixes = function() {
       L.Edit.CircleMarker = L.Edit.Circle.extend({
-        _resize: function() {}
+        _initMarkers: function() {
+          if (!this._markerGroup) {
+            this._markerGroup = new L.LayerGroup();
+          }
+          return this._createMoveMarker();
+        },
+        _move: function(latlng) {
+          return this._shape.setLatLng(latlng);
+        }
       });
       return L.CircleMarker.addInitHook(function() {
         if (L.Edit.CircleMarker) {
@@ -1623,7 +1631,7 @@ L.GeoIP = L.extend({
         var result = L.latLng(0, 0);
 
         var xhr = new XMLHttpRequest();
-        xhr.open("GET", url, false);
+        xhr.open("GET", url, true);
         xhr.onload = function () {
             var status = xhr.status;
             if (status == 200) {
